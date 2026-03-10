@@ -12,6 +12,7 @@ import type { Cliente } from '@/types'
 
 interface TablaClientesProps {
   clientes: Cliente[]
+  avisoInicial?: string | null
 }
 
 // Estado del modal: cerrado | crear | editar
@@ -25,13 +26,20 @@ interface EstadoToast {
   tipo: TipoToast
 }
 
-export function TablaClientes({ clientes: clientesIniciales }: TablaClientesProps) {
+export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: TablaClientesProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   // Sincronizar con los datos del servidor cuando se refresca la página
   const [clientes, setClientes] = useState(clientesIniciales)
   useEffect(() => { setClientes(clientesIniciales) }, [clientesIniciales])
+
+  // Mostrar aviso inicial si viene de una redirección (ej: sin clientes al crear factura)
+  useEffect(() => {
+    if (avisoInicial) setToast({ mensaje: avisoInicial, tipo: 'info' })
+  // Solo al montar
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [busqueda, setBusqueda] = useState('')
   const [modal, setModal] = useState<EstadoModal>({ abierto: false })

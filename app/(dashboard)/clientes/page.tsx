@@ -7,11 +7,14 @@ export const metadata: Metadata = {
   title: 'Clientes — FacturApp',
 }
 
-// Página de clientes: Server Component que carga los datos y
-// los pasa al componente interactivo TablaClientes
-export default async function ClientesPage() {
+interface PageProps {
+  searchParams: Promise<{ aviso?: string }>
+}
+
+export default async function ClientesPage({ searchParams }: PageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const { aviso } = await searchParams
 
   const { data } = await supabase
     .from('clientes')
@@ -21,10 +24,14 @@ export default async function ClientesPage() {
 
   const clientes = (data as Cliente[] | null) ?? []
 
+  const mensajes: Record<string, string> = {
+    'sin-clientes': 'Necesitas al menos un cliente para crear una factura.',
+  }
+
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
-      <TablaClientes clientes={clientes} />
+      <TablaClientes clientes={clientes} avisoInicial={aviso ? (mensajes[aviso] ?? null) : null} />
     </div>
   )
 }
