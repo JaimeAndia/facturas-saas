@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { crearFactura } from '@/app/(dashboard)/facturas/actions'
 import { formatCurrency } from '@/lib/utils'
 import type { Cliente } from '@/types'
@@ -306,21 +307,20 @@ export function FormFactura({ clientes }: FormFacturaProps) {
             {errores.clienteId && <p className="text-xs text-red-500">{errores.clienteId}</p>}
           </div>
 
-          <Input
+          <DatePicker
             label="Fecha de emisión"
-            type="date"
             value={fechaEmision}
-            onChange={(e) => setFechaEmision(e.target.value)}
+            onChange={(v) => { setFechaEmision(v); setErrores((p) => ({ ...p, fechaEmision: undefined })) }}
             error={errores.fechaEmision}
             required
           />
-          <Input
+          <DatePicker
             label="Fecha de vencimiento"
-            type="date"
             value={fechaVencimiento}
-            onChange={(e) => setFechaVencimiento(e.target.value)}
+            onChange={setFechaVencimiento}
             ayuda="Opcional"
             min={fechaEmision}
+            placeholder="Sin vencimiento"
           />
         </div>
       </div>
