@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd C:/facturas-saas && npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js resend @react-pdf/renderer)",
+      "Bash(cd C:/facturas-saas && npm install -D @types/react-pdf)",
+      "Bash(cd C:/facturas-saas && npm install clsx tailwind-merge)",
+      "Bash(cd C:/facturas-saas && npx tsc --noEmit 2>&1 | head -30)",
+      "Bash(cd C:/facturas-saas && node -e \"const s = require\\('stripe'\\); console.log\\(s.LATEST_API_VERSION\\)\")",
+      "Bash(cd C:/facturas-saas && node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_x'\\); console.log\\(Stripe.LATEST_API_VERSION ?? 'N/A'\\)\" 2>&1 | head -5)",
+      "Bash(cd C:/facturas-saas && npx tsc --noEmit 2>&1)"
+    ]
+  }
+}
