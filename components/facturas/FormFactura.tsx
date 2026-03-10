@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -26,6 +26,138 @@ interface ErroresForm {
   fechaEmision?: string
   lineas?: string
   lineasDetalle?: Record<string, { descripcion?: string; cantidad?: string; precio?: string }>
+}
+
+// Combobox de búsqueda de clientes
+interface SelectorClienteProps {
+  clientes: Pick<Cliente, 'id' | 'nombre' | 'nif'>[]
+  value: string
+  onChange: (id: string) => void
+  error?: string
+}
+
+function SelectorCliente({ clientes, value, onChange, error }: SelectorClienteProps) {
+  const clienteActual = clientes.find((c) => c.id === value) ?? null
+  const [busqueda, setBusqueda] = useState('')
+  const [abierto, setAbierto] = useState(false)
+  const contenedorRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar al hacer clic fuera
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (contenedorRef.current && !contenedorRef.current.contains(e.target as Node)) {
+        setAbierto(false)
+        setBusqueda('')
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const filtrados = busqueda.trim()
+    ? clientes.filter((c) => {
+        const q = busqueda.toLowerCase()
+        return (
+          c.nombre.toLowerCase().includes(q) ||
+          (c.nif ?? '').toLowerCase().includes(q)
+        )
+      })
+    : clientes
+
+  function seleccionar(cliente: Pick<Cliente, 'id' | 'nombre' | 'nif'>) {
+    onChange(cliente.id)
+    setBusqueda('')
+    setAbierto(false)
+  }
+
+  function limpiar(e: React.MouseEvent) {
+    e.stopPropagation()
+    onChange('')
+    setBusqueda('')
+    setAbierto(false)
+  }
+
+  return (
+    <div ref={contenedorRef} className="relative">
+      {/* Input principal */}
+      <div
+        className={`flex h-10 w-full items-center gap-2 rounded-lg border bg-white px-3 text-sm transition-colors focus-within:ring-2 focus-within:ring-blue-500/20 ${
+          error
+            ? 'border-red-400 focus-within:border-red-400'
+            : 'border-gray-300 focus-within:border-blue-500'
+        }`}
+        onClick={() => { if (!abierto) setAbierto(true) }}
+      >
+        {/* Icono búsqueda */}
+        <svg className="h-3.5 w-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+
+        {clienteActual && !abierto ? (
+          /* Cliente seleccionado — solo lectura hasta que se abra */
+          <span className="flex-1 truncate text-gray-900">
+            {clienteActual.nombre}
+            {clienteActual.nif && (
+              <span className="ml-1.5 text-gray-400">{clienteActual.nif}</span>
+            )}
+          </span>
+        ) : (
+          <input
+            type="text"
+            autoComplete="off"
+            placeholder={clienteActual ? clienteActual.nombre : 'Buscar cliente por nombre o NIF…'}
+            value={busqueda}
+            onChange={(e) => { setBusqueda(e.target.value); setAbierto(true) }}
+            onFocus={() => setAbierto(true)}
+            className="flex-1 bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
+          />
+        )}
+
+        {/* Botón limpiar */}
+        {clienteActual && (
+          <button
+            type="button"
+            onClick={limpiar}
+            className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+            title="Quitar cliente"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown */}
+      {abierto && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+          {filtrados.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-gray-400">
+              {busqueda ? `Sin resultados para "${busqueda}"` : 'Sin clientes'}
+            </p>
+          ) : (
+            <ul>
+              {filtrados.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => seleccionar(c)}
+                    className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-50 ${
+                      c.id === value ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-900'
+                    }`}
+                  >
+                    <span>{c.nombre}</span>
+                    {c.nif && <span className="ml-3 text-xs text-gray-400">{c.nif}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const IVA_OPCIONES = [21, 10, 4, 0] as const
@@ -160,25 +292,17 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-semibold text-gray-900">Datos principales</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* Selector de cliente */}
+          {/* Selector de cliente con búsqueda */}
           <div className="flex flex-col gap-1.5 md:col-span-1">
             <label className="text-sm font-medium text-gray-700">
               Cliente <span className="text-red-500">*</span>
             </label>
-            <select
+            <SelectorCliente
+              clientes={clientes}
               value={clienteId}
-              onChange={(e) => { setClienteId(e.target.value); setErrores((p) => ({ ...p, clienteId: undefined })) }}
-              className={`h-10 w-full rounded-lg border px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                errores.clienteId ? 'border-red-400' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Selecciona un cliente…</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}{c.nif ? ` — ${c.nif}` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(id) => { setClienteId(id); setErrores((p) => ({ ...p, clienteId: undefined })) }}
+              error={errores.clienteId}
+            />
             {errores.clienteId && <p className="text-xs text-red-500">{errores.clienteId}</p>}
           </div>
 
