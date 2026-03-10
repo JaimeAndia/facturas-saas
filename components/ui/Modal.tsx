@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ModalProps {
@@ -12,51 +12,55 @@ interface ModalProps {
 }
 
 export function Modal({ abierto, onCerrar, titulo, children, className }: ModalProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
+  // Bloquear scroll del body mientras el modal está abierto
   useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-
     if (abierto) {
-      dialog.showModal()
+      document.body.style.overflow = 'hidden'
     } else {
-      dialog.close()
+      document.body.style.overflow = ''
     }
+    return () => { document.body.style.overflow = '' }
   }, [abierto])
 
-  // Cerrar al hacer clic en el backdrop
-  function handleBackdropClick(e: React.MouseEvent<HTMLDialogElement>) {
-    const rect = dialogRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const clickFueraDeContenido =
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom
-    if (clickFueraDeContenido) onCerrar()
-  }
+  // Cerrar con Escape
+  useEffect(() => {
+    if (!abierto) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCerrar()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [abierto, onCerrar])
+
+  if (!abierto) return null
 
   return (
-    <dialog
-      ref={dialogRef}
-      onClick={handleBackdropClick}
-      onCancel={onCerrar}
-      className={cn(
-        'w-full max-w-md rounded-xl bg-white p-0 shadow-xl',
-        'backdrop:bg-black/50 backdrop:backdrop-blur-sm',
-        'open:animate-in open:fade-in open:zoom-in-95',
-        className
-      )}
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div className="flex flex-col">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onCerrar}
+        aria-hidden="true"
+      />
+
+      {/* Panel centrado */}
+      <div
+        className={cn(
+          'relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl',
+          className
+        )}
+      >
         {titulo && (
-          <div className="flex items-center justify-between border-b px-6 py-4">
+          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
             <h2 className="text-base font-semibold text-gray-900">{titulo}</h2>
             <button
               onClick={onCerrar}
-              className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               aria-label="Cerrar"
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -64,8 +68,10 @@ export function Modal({ abierto, onCerrar, titulo, children, className }: ModalP
             </button>
           </div>
         )}
-        <div className="px-6 py-5">{children}</div>
+        <div className="overflow-y-auto px-6 py-5" style={{ maxHeight: 'calc(100dvh - 8rem)' }}>
+          {children}
+        </div>
       </div>
-    </dialog>
+    </div>
   )
 }
