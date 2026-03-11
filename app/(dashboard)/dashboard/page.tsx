@@ -1,20 +1,11 @@
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getPerfil } from '@/lib/data/profile'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { GraficoIngresos } from '@/components/dashboard/GraficoIngresos'
 import { ProgresoConfiguracion } from '@/components/dashboard/ProgresoConfiguracion'
 import type { Database } from '@/types/database'
 import type { Metadata } from 'next'
-
-// Recharts pesa ~40 KB gzipped — se carga de forma asíncrona en el cliente
-const GraficoIngresos = dynamic(
-  () => import('@/components/dashboard/GraficoIngresos').then((m) => m.GraficoIngresos),
-  {
-    ssr: false,
-    loading: () => <div className="h-48 animate-pulse rounded-lg bg-gray-100" />,
-  }
-)
 
 export const metadata: Metadata = {
   title: 'Inicio — FacturApp',
