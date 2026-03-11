@@ -1,10 +1,20 @@
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
+import { getPerfil } from '@/lib/data/profile'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { GraficoIngresos } from '@/components/dashboard/GraficoIngresos'
 import { ProgresoConfiguracion } from '@/components/dashboard/ProgresoConfiguracion'
 import type { Database } from '@/types/database'
 import type { Metadata } from 'next'
+
+// Recharts pesa ~40 KB gzipped — se carga de forma asíncrona en el cliente
+const GraficoIngresos = dynamic(
+  () => import('@/components/dashboard/GraficoIngresos').then((m) => m.GraficoIngresos),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 animate-pulse rounded-lg bg-gray-100" />,
+  }
+)
 
 export const metadata: Metadata = {
   title: 'Inicio — FacturApp',
@@ -55,9 +65,11 @@ export default async function DashboardPage() {
   const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().slice(0, 10)
   const { inicio: inicioTrim, fin: finTrim } = rangoTrimestre()
 
+  // Perfil via React cache() — reutiliza la query del layout sin hacer otra llamada
+  const perfil = await getPerfil(user!.id)
+
   // Cargar todas las facturas necesarias en paralelo
   const [
-    { data: perfil },
     { data: facturasMes },
     { data: facturasTrim },
     { data: facturasPendientes },
@@ -65,13 +77,6 @@ export default async function DashboardPage() {
     { data: facturasRecientes },
     { data: facturasGrafico },
   ] = await Promise.all([
-    // Perfil del usuario (para barra de progreso)
-    supabase
-      .from('profiles')
-      .select('nombre, apellidos, nif, telefono, direccion, ciudad, codigo_postal, provincia')
-      .eq('id', user!.id)
-      .single(),
-
     // Ingresos este mes (solo pagadas)
     supabase
       .from('facturas')

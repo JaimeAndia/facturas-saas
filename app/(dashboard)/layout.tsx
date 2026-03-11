@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getPerfil } from '@/lib/data/profile'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Navbar } from '@/components/layout/Navbar'
 import { BannerSuscripcion } from '@/components/layout/BannerSuscripcion'
@@ -16,13 +17,9 @@ export default async function DashboardLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Cargar perfil del usuario
-  const { data: perfil } = await supabase
-    .from('profiles')
-    .select('nombre, apellidos, email')
-    .eq('id', user.id)
-    .single()
-
+  // getPerfil usa React cache() — si dashboard/page.tsx ya lo llamó,
+  // no se hace una segunda query a Supabase en el mismo request
+  const perfil = await getPerfil(user.id)
   if (!perfil) redirect('/login')
 
   return (

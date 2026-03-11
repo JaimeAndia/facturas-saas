@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getClientesCached } from '@/lib/data/clientes'
 import { FormFactura } from '@/components/facturas/FormFactura'
 import type { Cliente } from '@/types'
 import type { Metadata } from 'next'
@@ -12,13 +13,8 @@ export default async function NuevaFacturaPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data } = await supabase
-    .from('clientes')
-    .select('id, nombre, nif')
-    .eq('user_id', user!.id)
-    .order('nombre', { ascending: true })
-
-  const clientes = (data as Pick<Cliente, 'id' | 'nombre' | 'nif'>[] | null) ?? []
+  // Lista de clientes cacheada 30 s — se invalida al crear/editar/borrar un cliente
+  const clientes = (await getClientesCached(user!.id)) as Pick<Cliente, 'id' | 'nombre' | 'nif'>[]
 
   // Si no hay clientes, redirigir a la página de clientes para crear uno primero
   if (clientes.length === 0) {
