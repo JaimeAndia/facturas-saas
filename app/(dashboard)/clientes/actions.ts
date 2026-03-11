@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 // Resultado uniforme para todas las acciones
@@ -48,7 +48,6 @@ export async function crearCliente(datos: DatosCliente): Promise<ResultadoAccion
   if (error) return { ok: false, error: error.message }
 
   revalidatePath('/clientes')
-  revalidateTag(`clientes-${user.id}`)
   return { ok: true }
 }
 
@@ -79,7 +78,6 @@ export async function actualizarCliente(
   if (error) return { ok: false, error: error.message }
 
   revalidatePath('/clientes')
-  revalidateTag(`clientes-${user.id}`)
   return { ok: true }
 }
 
@@ -102,6 +100,5 @@ export async function eliminarCliente(id: string): Promise<ResultadoAccion> {
   }
 
   revalidatePath('/clientes')
-  revalidateTag(`clientes-${user.id}`)
   return { ok: true }
 }
