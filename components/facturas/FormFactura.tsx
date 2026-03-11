@@ -191,6 +191,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   const [isPending, startTransition] = useTransition()
   const { puedeCrear, plan, cargando: cargandoSub, refrescar } = useSubscription()
   const [modalUpgrade, setModalUpgrade] = useState(false)
+  const [motivoUpgrade, setMotivoUpgrade] = useState<'limite_facturas' | 'factura_recurrente'>('limite_facturas')
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -266,6 +267,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   const handleSubmit = useCallback((estado: 'borrador' | 'emitida') => {
     // Verificar límite antes de guardar (borradores también cuentan)
     if (!puedeCrear && !cargandoSub) {
+      setMotivoUpgrade('limite_facturas')
       setModalUpgrade(true)
       return
     }
@@ -576,7 +578,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
           <div className="flex items-start gap-3">
             <button
               type="button"
-              onClick={() => plan === 'pro' ? setEsRecurrente(!esRecurrente) : setModalUpgrade(true)}
+              onClick={() => plan === 'pro' ? setEsRecurrente(!esRecurrente) : (setMotivoUpgrade('factura_recurrente'), setModalUpgrade(true))}
               className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
                 esRecurrente && plan === 'pro'
                   ? 'border-violet-600 bg-violet-600'
@@ -603,7 +605,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
           {plan !== 'pro' && (
             <button
               type="button"
-              onClick={() => setModalUpgrade(true)}
+              onClick={() => { setMotivoUpgrade('factura_recurrente'); setModalUpgrade(true) }}
               className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
             >
               Plan Pro
@@ -636,7 +638,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
         abierto={modalUpgrade}
         onCerrar={() => { setModalUpgrade(false); refrescar() }}
         planActual={plan}
-        motivo="limite_facturas"
+        motivo={motivoUpgrade}
       />
 
       {/* Acciones */}

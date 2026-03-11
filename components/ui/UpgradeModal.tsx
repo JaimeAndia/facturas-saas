@@ -50,7 +50,8 @@ export function UpgradeModal({ abierto, onCerrar, planActual, motivo = 'limite_f
   if (!abierto) return null
 
   const mensaje = MENSAJES[motivo][planActual]
-  const planObjetivo = planActual === 'free' ? 'basico' : 'pro'
+  // Facturas recurrentes son exclusivas de Pro, independientemente del plan actual
+  const planObjetivo = (motivo === 'factura_recurrente' || planActual === 'basico') ? 'pro' : 'basico'
   const configObjetivo = PLANES[planObjetivo]
 
   async function iniciarCheckout() {
@@ -65,8 +66,15 @@ export function UpgradeModal({ abierto, onCerrar, planActual, motivo = 'limite_f
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId: configObjetivo.priceId }),
       })
-      const json = await res.json() as { url?: string }
-      if (json.url) window.location.href = json.url
+      const json = await res.json() as { url?: string; error?: string }
+      if (json.url) {
+        window.location.href = json.url
+      } else {
+        // Si Stripe falla, redirigir a la página de planes como fallback
+        router.push('/configuracion/planes')
+      }
+    } catch {
+      router.push('/configuracion/planes')
     } finally {
       setCargandoPlan(null)
     }
