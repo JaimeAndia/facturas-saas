@@ -146,7 +146,6 @@ export interface Database {
         }
         Update: Partial<Database['public']['Tables']['lineas_factura']['Insert']>
       }
-    }
       facturas_recurrentes: {
         Row: {
           id: string
@@ -169,6 +168,7 @@ export interface Database {
         }
         Update: Partial<Database['public']['Tables']['facturas_recurrentes']['Insert']>
       }
+    }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>
