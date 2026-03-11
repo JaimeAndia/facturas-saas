@@ -16,9 +16,53 @@ interface FormClienteProps {
 // Campos con posible error de validación
 interface ErroresForm {
   nombre?: string
+  nif?: string
   email?: string
   telefono?: string
   codigo_postal?: string
+}
+
+// Valida NIF (DNI/NIE) y CIF españoles, verificando el dígito de control
+function validarNifCif(valor: string): boolean {
+  const v = valor.trim().toUpperCase()
+
+  // CIF: letra + 7 dígitos + dígito/letra de control
+  // Letras de tipo de sociedad válidas
+  if (/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(v)) {
+    const letras = 'JABCDEFGHI'
+    const cuerpo = v.slice(1, 8)
+    let suma = 0
+    for (let i = 0; i < cuerpo.length; i++) {
+      let n = parseInt(cuerpo[i])
+      if (i % 2 === 0) {
+        n *= 2
+        if (n > 9) n -= 9
+      }
+      suma += n
+    }
+    const control = (10 - (suma % 10)) % 10
+    const ultimo = v.slice(-1)
+    // Letras P, Q, R, S, W: el control es siempre letra
+    // Letras A, B, E, H: el control es siempre número
+    // El resto: puede ser letra o número
+    return ultimo === String(control) || ultimo === letras[control]
+  }
+
+  // NIE: X/Y/Z + 7 dígitos + letra
+  if (/^[XYZ]\d{7}[TRWAGMYFPDXBNJZSQVHLCKE]$/.test(v)) {
+    const tabla = 'TRWAGMYFPDXBNJZSQVHLCKE'
+    const sustitucion = { X: '0', Y: '1', Z: '2' } as Record<string, string>
+    const num = parseInt(sustitucion[v[0]] + v.slice(1, 8))
+    return v.slice(-1) === tabla[num % 23]
+  }
+
+  // DNI: 8 dígitos + letra
+  if (/^\d{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/.test(v)) {
+    const tabla = 'TRWAGMYFPDXBNJZSQVHLCKE'
+    return v.slice(-1) === tabla[parseInt(v.slice(0, 8)) % 23]
+  }
+
+  return false
 }
 
 type CampoForm = {
@@ -30,6 +74,7 @@ type CampoForm = {
   ciudad: string
   codigo_postal: string
   provincia: string
+  pais: string
   notas: string
 }
 
@@ -40,6 +85,10 @@ function validarForm(datos: CampoForm): ErroresForm {
     errores.nombre = 'El nombre es obligatorio'
   } else if (datos.nombre.trim().length < 2) {
     errores.nombre = 'El nombre debe tener al menos 2 caracteres'
+  }
+
+  if (datos.nif && !validarNifCif(datos.nif)) {
+    errores.nif = 'NIF/CIF no válido (ej: 12345678Z, X1234567Z, B12345678)'
   }
 
   if (datos.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) {
@@ -76,6 +125,7 @@ export function FormCliente({ cliente, onExito, onCancelar }: FormClienteProps) 
     ciudad: cliente?.ciudad ?? '',
     codigo_postal: cliente?.codigo_postal ?? '',
     provincia: cliente?.provincia ?? '',
+    pais: cliente?.pais ?? 'España',
     notas: cliente?.notas ?? '',
   })
 
@@ -109,6 +159,7 @@ export function FormCliente({ cliente, onExito, onCancelar }: FormClienteProps) 
       ciudad: vacioANull(form.ciudad),
       codigo_postal: vacioANull(form.codigo_postal),
       provincia: vacioANull(form.provincia),
+      pais: form.pais.trim() || 'España',
       notas: vacioANull(form.notas),
     }
 
@@ -152,6 +203,7 @@ export function FormCliente({ cliente, onExito, onCancelar }: FormClienteProps) 
         name="nif"
         value={form.nif}
         onChange={handleChange}
+        error={errores.nif}
         placeholder="B12345678 o 12345678Z"
         ayuda="Opcional"
       />
@@ -214,6 +266,15 @@ export function FormCliente({ cliente, onExito, onCancelar }: FormClienteProps) 
           placeholder="Madrid"
         />
       </div>
+
+      {/* País */}
+      <Input
+        label="País"
+        name="pais"
+        value={form.pais}
+        onChange={handleChange}
+        placeholder="España"
+      />
 
       {/* Notas */}
       <Textarea

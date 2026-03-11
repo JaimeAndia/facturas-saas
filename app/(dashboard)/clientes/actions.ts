@@ -15,6 +15,7 @@ export interface DatosCliente {
   ciudad?: string | null
   codigo_postal?: string | null
   provincia?: string | null
+  pais?: string
   notas?: string | null
 }
 
@@ -40,6 +41,7 @@ export async function crearCliente(datos: DatosCliente): Promise<ResultadoAccion
     ciudad: datos.ciudad ?? null,
     codigo_postal: datos.codigo_postal ?? null,
     provincia: datos.provincia ?? null,
+    pais: datos.pais ?? 'España',
     notas: datos.notas ?? null,
   })
 
@@ -67,6 +69,7 @@ export async function actualizarCliente(
       ciudad: datos.ciudad ?? null,
       codigo_postal: datos.codigo_postal ?? null,
       provincia: datos.provincia ?? null,
+      pais: datos.pais ?? 'España',
       notas: datos.notas ?? null,
     })
     .eq('id', id)

@@ -103,7 +103,7 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
             placeholder="Buscar por nombre, NIF o email..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="h-10 w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="h-10 w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
 
@@ -147,7 +147,7 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
               <span>Nombre</span>
               <span>NIF</span>
               <span>Email</span>
-              <span>Alta</span>
+              <span>Teléfono</span>
               <span>Acciones</span>
             </div>
 
@@ -164,7 +164,7 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
                     </div>
                     <span className="text-sm text-gray-600">{cliente.nif ?? '—'}</span>
                     <span className="truncate text-sm text-gray-600">{cliente.email ?? '—'}</span>
-                    <span className="text-sm text-gray-400">{formatDate(cliente.created_at)}</span>
+                    <span className="text-sm text-gray-600">{cliente.telefono ?? '—'}</span>
 
                     {/* Acciones desktop */}
                     <AccionesCliente
