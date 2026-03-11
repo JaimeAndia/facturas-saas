@@ -116,18 +116,21 @@ export default async function DashboardPage() {
       .gte('fecha_emision', new Date(ahora.getFullYear(), ahora.getMonth() - 5, 1).toISOString().slice(0, 10)),
   ])
 
+  type FilaTotal = { total: number }
+
   // Calcular totales
-  const totalMes = (facturasMes ?? []).reduce((s, f) => s + f.total, 0)
-  const totalTrim = (facturasTrim ?? []).reduce((s, f) => s + f.total, 0)
-  const totalPendiente = (facturasPendientes ?? []).reduce((s, f) => s + f.total, 0)
-  const totalVencido = (facturasVencidas ?? []).reduce((s, f) => s + f.total, 0)
+  const totalMes = ((facturasMes ?? []) as FilaTotal[]).reduce((s, f) => s + f.total, 0)
+  const totalTrim = ((facturasTrim ?? []) as FilaTotal[]).reduce((s, f) => s + f.total, 0)
+  const totalPendiente = ((facturasPendientes ?? []) as FilaTotal[]).reduce((s, f) => s + f.total, 0)
+  const totalVencido = ((facturasVencidas ?? []) as FilaTotal[]).reduce((s, f) => s + f.total, 0)
   const numPendientes = (facturasPendientes ?? []).length
   const numVencidas = (facturasVencidas ?? []).length
 
   // Construir datos del gráfico agrupados por mes
   const meses = ultimosMeses(6)
+  type FilaGrafico = { total: number; fecha_emision: string }
   const datoGrafico = meses.map(({ año, mes, etiqueta }) => {
-    const ingresos = (facturasGrafico ?? [])
+    const ingresos = ((facturasGrafico ?? []) as FilaGrafico[])
       .filter((f) => {
         const d = new Date(f.fecha_emision)
         return d.getFullYear() === año && d.getMonth() === mes
