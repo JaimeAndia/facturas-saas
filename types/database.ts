@@ -103,6 +103,7 @@ export interface Database {
           total: number
           notas: string | null
           pdf_url: string | null
+          fecha_envio: string | null
         }
         Insert: {
           id?: string
@@ -120,6 +121,7 @@ export interface Database {
           total: number
           notas?: string | null
           pdf_url?: string | null
+          fecha_envio?: string | null
         }
         Update: Partial<Database['public']['Tables']['facturas']['Insert']>
       }
@@ -145,6 +147,28 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['lineas_factura']['Insert']>
       }
     }
+      facturas_recurrentes: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          factura_base_id: string
+          frecuencia: 'mensual' | 'trimestral' | 'anual'
+          proxima_fecha: string
+          activo: boolean
+          ultima_generacion: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          factura_base_id: string
+          frecuencia: 'mensual' | 'trimestral' | 'anual'
+          proxima_fecha: string
+          activo?: boolean
+          ultima_generacion?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['facturas_recurrentes']['Insert']>
+      }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>

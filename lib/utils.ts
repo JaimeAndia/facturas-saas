@@ -37,3 +37,15 @@ export function calculateIVA(base: number, rate = 21): number {
 export function calculateIRPF(base: number, rate = 15): number {
   return parseFloat(((base * rate) / 100).toFixed(2))
 }
+
+// Calcula la próxima fecha de facturación según la frecuencia
+export function calcularProximaFecha(
+  desde: Date,
+  frecuencia: 'mensual' | 'trimestral' | 'anual'
+): string {
+  const d = new Date(desde)
+  if (frecuencia === 'mensual') d.setMonth(d.getMonth() + 1)
+  else if (frecuencia === 'trimestral') d.setMonth(d.getMonth() + 3)
+  else d.setFullYear(d.getFullYear() + 1)
+  return d.toISOString().split('T')[0]
+}
