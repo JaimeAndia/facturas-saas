@@ -11,7 +11,15 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('facturas').select('numero').eq('id', id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { title: 'Factura — FacturApp' }
+
+  const { data } = await supabase
+    .from('facturas')
+    .select('numero')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const numero = (data as any)?.numero ?? 'Factura'
   return { title: `${numero} — FacturApp` }

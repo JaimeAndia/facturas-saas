@@ -4,10 +4,18 @@ import { stripe } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
 import type Stripe from 'stripe'
 
-// Mapea el priceId de Stripe al plan interno
+// Mapea el priceId de Stripe al plan interno (mensual y anual)
 function obtenerPlanDesdePriceId(priceId: string): 'free' | 'basico' | 'pro' {
-  if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC) return 'basico'
-  if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO) return 'pro'
+  const basicoIds = [
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_ANUAL,
+  ]
+  const proIds = [
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_ANUAL,
+  ]
+  if (basicoIds.includes(priceId)) return 'basico'
+  if (proIds.includes(priceId)) return 'pro'
   return 'free'
 }
 
@@ -21,14 +29,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Sin firma' }, { status: 400 })
   }
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET no configurado')
+    return NextResponse.json({ error: 'Error de configuración' }, { status: 500 })
+  }
+
   let evento: Stripe.Event
 
   try {
-    evento = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+    evento = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('Error verificando webhook de Stripe:', err)
     return NextResponse.json({ error: 'Firma inválida' }, { status: 400 })
