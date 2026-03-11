@@ -97,7 +97,7 @@ export function ListaFacturas({ facturas: facturasProp }: ListaFacturasProps) {
             placeholder="Buscar por número o cliente..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
         <Link href="/facturas/nueva">

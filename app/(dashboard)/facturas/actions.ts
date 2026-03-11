@@ -19,6 +19,7 @@ export interface LineaInput {
 
 export interface FacturaInput {
   cliente_id: string
+  numero?: string
   fecha_emision: string
   fecha_vencimiento?: string | null
   estado: 'borrador' | 'emitida'
@@ -45,14 +46,19 @@ export async function crearFactura(
   const { supabase, user } = await obtenerUsuario()
   if (!user) return { ok: false, error: 'No autenticado' }
 
-  // Generar número correlativo desde función SQL
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: numero, error: errorNumero } = await (supabase.rpc as any)(
-    'fn_generar_numero_factura', { p_user_id: user.id }
-  )
-
-  if (errorNumero || !numero) {
-    return { ok: false, error: 'Error generando número de factura' }
+  // Usar número manual si se proporcionó, si no generar automáticamente
+  let numero: string
+  if (datos.numero) {
+    numero = datos.numero
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: numeroGenerado, error: errorNumero } = await (supabase.rpc as any)(
+      'fn_generar_numero_factura', { p_user_id: user.id }
+    )
+    if (errorNumero || !numeroGenerado) {
+      return { ok: false, error: 'Error generando número de factura' }
+    }
+    numero = numeroGenerado as string
   }
 
   // Insertar factura

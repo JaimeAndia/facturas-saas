@@ -9,7 +9,6 @@ import {
   actualizarEstadoFactura,
   duplicarFactura,
   eliminarFactura,
-  enviarFacturaPorEmail,
 } from '@/app/(dashboard)/facturas/actions'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { BADGE_ESTADO } from '@/components/facturas/ListaFacturas'
@@ -84,12 +83,13 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
 
   function handleEnviarEmail() {
     startTransition(async () => {
-      const resultado = await enviarFacturaPorEmail(factura.id)
-      if (resultado.ok) {
-        mostrarToast('Email enviado correctamente', 'exito')
+      const res = await fetch(`/api/facturas/${factura.id}/enviar`, { method: 'POST' })
+      const json = await res.json() as { ok?: boolean; error?: string }
+      if (json.ok) {
+        mostrarToast('Email enviado con el PDF adjunto', 'exito')
         router.refresh()
       } else {
-        mostrarToast(resultado.error, 'error')
+        mostrarToast(json.error ?? 'Error enviando el email', 'error')
       }
     })
   }

@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { UpgradeModal } from '@/components/ui/UpgradeModal'
+import { useSubscription } from '@/hooks/useSubscription'
 import { crearFactura } from '@/app/(dashboard)/facturas/actions'
+import { crearRecurrente } from '@/app/(dashboard)/facturas/recurrentes/actions'
 import { formatCurrency } from '@/lib/utils'
 import type { Cliente } from '@/types'
 
@@ -161,8 +164,17 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
   )
 }
 
-const IVA_OPCIONES = [21, 10, 4, 0] as const
-const IRPF_OPCIONES = [15, 7, 0] as const
+// IVA estándar + recargo de equivalencia (porcentaje combinado IVA+RE)
+const IVA_OPCIONES: { valor: number; etiqueta: string }[] = [
+  { valor: 21,   etiqueta: '21%' },
+  { valor: 10,   etiqueta: '10%' },
+  { valor: 4,    etiqueta: '4%' },
+  { valor: 26.2, etiqueta: 'RE 21%+5.2%' },
+  { valor: 11.4, etiqueta: 'RE 10%+1.4%' },
+  { valor: 4.5,  etiqueta: 'RE 4%+0.5%' },
+  { valor: 0,    etiqueta: 'Exento' },
+]
+const IRPF_OPCIONES = [19, 15, 7, 0] as const
 
 function crearLineaVacia(orden: number): LineaFormulario {
   return {
@@ -177,15 +189,20 @@ function crearLineaVacia(orden: number): LineaFormulario {
 export function FormFactura({ clientes }: FormFacturaProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const { puedeCrear, plan, cargando: cargandoSub, refrescar } = useSubscription()
+  const [modalUpgrade, setModalUpgrade] = useState(false)
 
   const hoy = new Date().toISOString().split('T')[0]
 
   const [clienteId, setClienteId] = useState('')
+  const [numeroManual, setNumeroManual] = useState('')
   const [fechaEmision, setFechaEmision] = useState(hoy)
   const [fechaVencimiento, setFechaVencimiento] = useState('')
   const [ivaPorcentaje, setIvaPorcentaje] = useState<number>(21)
   const [irpfPorcentaje, setIrpfPorcentaje] = useState<number>(15)
   const [notas, setNotas] = useState('')
+  const [esRecurrente, setEsRecurrente] = useState(false)
+  const [frecuencia, setFrecuencia] = useState<'mensual' | 'trimestral' | 'anual'>('mensual')
   const [lineas, setLineas] = useState<LineaFormulario[]>([crearLineaVacia(0)])
   const [errores, setErrores] = useState<ErroresForm>({})
   const [errorServidor, setErrorServidor] = useState<string | null>(null)
@@ -247,12 +264,18 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   }
 
   const handleSubmit = useCallback((estado: 'borrador' | 'emitida') => {
+    // Verificar límite antes de guardar (borradores también cuentan)
+    if (!puedeCrear && !cargandoSub) {
+      setModalUpgrade(true)
+      return
+    }
     if (!validar()) return
     setErrorServidor(null)
 
     startTransition(async () => {
       const resultado = await crearFactura({
         cliente_id: clienteId,
+        numero: numeroManual.trim() || undefined,
         fecha_emision: fechaEmision,
         fecha_vencimiento: fechaVencimiento || null,
         estado,
@@ -273,13 +296,17 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       })
 
       if (resultado.ok && resultado.datos) {
+        // Si es recurrente, crear la programación
+        if (esRecurrente && plan === 'pro') {
+          await crearRecurrente(resultado.datos.id, frecuencia)
+        }
         router.push(`/facturas/${resultado.datos.id}`)
       } else if (!resultado.ok) {
         setErrorServidor(resultado.error)
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteId, fechaEmision, fechaVencimiento, ivaPorcentaje, irpfPorcentaje, notas, lineas, baseImponible, ivaImporte, irpfImporte, total])
+  }, [clienteId, numeroManual, fechaEmision, fechaVencimiento, ivaPorcentaje, irpfPorcentaje, notas, lineas, baseImponible, ivaImporte, irpfImporte, total, puedeCrear, cargandoSub, esRecurrente, frecuencia, plan])
 
   return (
     <div className="space-y-6">
@@ -292,9 +319,9 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       {/* Cabecera: cliente + fechas */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-semibold text-gray-900">Datos principales</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Selector de cliente con búsqueda */}
-          <div className="flex flex-col gap-1.5 md:col-span-1">
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">
               Cliente <span className="text-red-500">*</span>
             </label>
@@ -307,6 +334,17 @@ export function FormFactura({ clientes }: FormFacturaProps) {
             {errores.clienteId && <p className="text-xs text-red-500">{errores.clienteId}</p>}
           </div>
 
+          {/* Número de factura */}
+          <Input
+            label="Número de factura"
+            value={numeroManual}
+            onChange={(e) => setNumeroManual(e.target.value)}
+            placeholder="Se asignará automáticamente"
+            ayuda="Opcional. Déjalo vacío para numeración automática."
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <DatePicker
             label="Fecha de emisión"
             value={fechaEmision}
@@ -356,7 +394,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     placeholder="Descripción del servicio o producto"
                     value={linea.descripcion}
                     onChange={(e) => actualizarLinea(linea._id, 'descripcion', e.target.value)}
-                    className={`h-10 w-full rounded-lg border px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                       errLinea?.descripcion ? 'border-red-400' : 'border-gray-300'
                     }`}
                   />
@@ -372,7 +410,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     placeholder="1"
                     value={linea.cantidad || ''}
                     onChange={(e) => actualizarLinea(linea._id, 'cantidad', e.target.value)}
-                    className={`h-10 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                       errLinea?.cantidad ? 'border-red-400' : 'border-gray-300'
                     }`}
                   />
@@ -389,7 +427,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                       placeholder="0,00"
                       value={linea.precioUnitario || ''}
                       onChange={(e) => actualizarLinea(linea._id, 'precioUnitario', e.target.value)}
-                      className={`h-10 w-full rounded-lg border py-2 pl-3 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                      className={`h-10 w-full rounded-lg border py-2 pl-3 pr-7 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                         errLinea?.precio ? 'border-red-400' : 'border-gray-300'
                       }`}
                     />
@@ -446,19 +484,19 @@ export function FormFactura({ clientes }: FormFacturaProps) {
             {/* IVA */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700">IVA</label>
-              <div className="flex gap-2">
-                {IVA_OPCIONES.map((p) => (
+              <div className="flex flex-wrap gap-2">
+                {IVA_OPCIONES.map(({ valor, etiqueta }) => (
                   <button
-                    key={p}
+                    key={valor}
                     type="button"
-                    onClick={() => setIvaPorcentaje(p)}
+                    onClick={() => setIvaPorcentaje(valor)}
                     className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                      ivaPorcentaje === p
+                      ivaPorcentaje === valor
                         ? 'border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-300 text-gray-700 hover:border-blue-400'
                     }`}
                   >
-                    {p === 0 ? 'Exento' : `${p}%`}
+                    {etiqueta}
                   </button>
                 ))}
               </div>
@@ -467,7 +505,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
             {/* IRPF */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700">IRPF (retención)</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {IRPF_OPCIONES.map((p) => (
                   <button
                     key={p}
@@ -528,6 +566,79 @@ export function FormFactura({ clientes }: FormFacturaProps) {
         />
       </div>
 
+      {/* Factura recurrente — solo Plan Pro */}
+      <div className={`rounded-xl border p-5 ${
+        plan === 'pro'
+          ? 'border-violet-200 bg-violet-50'
+          : 'border-gray-200 bg-gray-50 opacity-60'
+      }`}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={() => plan === 'pro' ? setEsRecurrente(!esRecurrente) : setModalUpgrade(true)}
+              className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                esRecurrente && plan === 'pro'
+                  ? 'border-violet-600 bg-violet-600'
+                  : 'border-gray-300 bg-white'
+              }`}
+              aria-checked={esRecurrente}
+              role="checkbox"
+            >
+              {esRecurrente && plan === 'pro' && (
+                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Repetir esta factura</p>
+              <p className="text-xs text-gray-500">
+                {plan === 'pro'
+                  ? 'Se generará automáticamente según la frecuencia elegida.'
+                  : 'Disponible en el Plan Pro.'}
+              </p>
+            </div>
+          </div>
+          {plan !== 'pro' && (
+            <button
+              type="button"
+              onClick={() => setModalUpgrade(true)}
+              className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+            >
+              Plan Pro
+            </button>
+          )}
+        </div>
+
+        {esRecurrente && plan === 'pro' && (
+          <div className="mt-4 flex gap-2">
+            {(['mensual', 'trimestral', 'anual'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFrecuencia(f)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                  frecuencia === f
+                    ? 'border-violet-600 bg-violet-600 text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-violet-400'
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de upgrade si se alcanza el límite */}
+      <UpgradeModal
+        abierto={modalUpgrade}
+        onCerrar={() => { setModalUpgrade(false); refrescar() }}
+        planActual={plan}
+        motivo="limite_facturas"
+      />
+
       {/* Acciones */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button
@@ -548,7 +659,11 @@ export function FormFactura({ clientes }: FormFacturaProps) {
           cargando={isPending}
           onClick={() => handleSubmit('emitida')}
         >
-          Emitir factura
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Emitir y generar PDF
         </Button>
       </div>
     </div>
