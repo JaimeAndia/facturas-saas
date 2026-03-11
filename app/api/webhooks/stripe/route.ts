@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
 import type Stripe from 'stripe'
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   let evento: Stripe.Event
 
   try {
-    evento = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    evento = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('Error verificando webhook de Stripe:', err)
     return NextResponse.json({ error: 'Firma inválida' }, { status: 400 })
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         const userId = session.metadata?.supabase_user_id
 
         // Recuperar la suscripción para obtener el priceId y status
-        const suscripcion = await stripe.subscriptions.retrieve(subscriptionId)
+        const suscripcion = await getStripe().subscriptions.retrieve(subscriptionId)
         const priceId = suscripcion.items.data[0]?.price.id ?? ''
         const plan = obtenerPlanDesdePriceId(priceId)
 

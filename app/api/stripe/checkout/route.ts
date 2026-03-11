@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // Si no tiene customer en Stripe, crearlo ahora
     if (!customerId) {
       const nombreCompleto = [perfil?.nombre, perfil?.apellidos].filter(Boolean).join(' ')
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: user.email ?? perfil?.email,
         name: nombreCompleto || undefined,
         metadata: { supabase_user_id: user.id },
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const origen = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
     // Crear sesión de Stripe Checkout en modo suscripción
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
