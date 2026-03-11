@@ -42,7 +42,7 @@ export function ProgresoConfiguracion({ perfil }: Props) {
           </span>
         </p>
         <Link
-          href="/configuracion/editar"
+          href="/configuracion"
           className="text-xs font-medium text-blue-600 hover:underline"
         >
           Completar →
