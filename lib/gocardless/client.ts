@@ -1,5 +1,4 @@
-import GoCardless from 'gocardless-nodejs'
-import { Environments } from 'gocardless-nodejs/environments'
+import { gocardless as GoCardless, Environments } from 'gocardless-nodejs'
 
 // Cliente lazy: se instancia al usarlo, no en build time
 let _gocardless: ReturnType<typeof GoCardless> | null = null
