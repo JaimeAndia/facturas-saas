@@ -38,6 +38,41 @@ export async function POST(request: Request) {
 
   try {
     switch (evento.type) {
+      // Checkout completado: guardar customer_id y activar el plan
+      case 'checkout.session.completed': {
+        const session = evento.data.object as Stripe.Checkout.Session
+        if (session.mode !== 'subscription') break
+
+        const customerId = session.customer as string
+        const subscriptionId = session.subscription as string
+        const userId = session.metadata?.supabase_user_id
+
+        // Recuperar la suscripción para obtener el priceId y status
+        const suscripcion = await stripe.subscriptions.retrieve(subscriptionId)
+        const priceId = suscripcion.items.data[0]?.price.id ?? ''
+        const plan = obtenerPlanDesdePriceId(priceId)
+
+        // Actualizar por user_id (disponible en metadata) o por customer_id
+        const filtro = userId
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase.from('profiles') as any).update({
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscriptionId,
+              plan,
+              plan_status: 'active',
+            }).eq('id', userId)
+          : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase.from('profiles') as any).update({
+              stripe_subscription_id: subscriptionId,
+              plan,
+              plan_status: 'active',
+            }).eq('stripe_customer_id', customerId)
+
+        await filtro
+        break
+      }
+
+      // Suscripción creada o actualizada (cambio de plan, renovación, etc.)
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const suscripcion = evento.data.object as Stripe.Subscription
@@ -56,6 +91,7 @@ export async function POST(request: Request) {
         break
       }
 
+      // Suscripción cancelada: degradar a plan free
       case 'customer.subscription.deleted': {
         const suscripcion = evento.data.object as Stripe.Subscription
         const customerId = suscripcion.customer as string
@@ -68,6 +104,20 @@ export async function POST(request: Request) {
             stripe_subscription_id: null,
           })
           .eq('stripe_customer_id', customerId)
+        break
+      }
+
+      // Pago fallido: marcar como past_due sin cancelar el plan todavía
+      case 'invoice.payment_failed': {
+        const invoice = evento.data.object as Stripe.Invoice
+        const customerId = invoice.customer as string
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('profiles') as any)
+          .update({ plan_status: 'past_due' })
+          .eq('stripe_customer_id', customerId)
+
+        console.warn(`Pago fallido para customer ${customerId} — factura ${invoice.id}`)
         break
       }
 

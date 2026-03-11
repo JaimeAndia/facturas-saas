@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Navbar } from '@/components/layout/Navbar'
+import { BannerSuscripcion } from '@/components/layout/BannerSuscripcion'
 
 // Layout compartido para todas las páginas del dashboard
 export default async function DashboardLayout({
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
       {/* Contenido principal */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <Navbar perfil={perfil} />
+        <BannerSuscripcion />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
