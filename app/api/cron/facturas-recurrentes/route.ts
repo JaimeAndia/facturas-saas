@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { render } from '@react-email/components'
 import { createClient } from '@/lib/supabase/server'
-import { resend } from '@/lib/resend/client'
+import { getResend } from '@/lib/resend/client'
 import { FacturaPDF } from '@/components/facturas/FacturaPDF'
 import { FacturaEmail } from '@/emails/FacturaEmail'
 import { formatDate } from '@/lib/utils'
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
           })
         )
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${nombreEmisor} <facturas@resend.dev>`,
           to: cliente.email,
           subject: `Factura ${nuevaFactura.numero} de ${nombreEmisor}`,

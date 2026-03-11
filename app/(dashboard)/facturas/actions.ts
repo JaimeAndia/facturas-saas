@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { resend } from '@/lib/resend/client'
+import { getResend } from '@/lib/resend/client'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export type ResultadoAccion<T = void> =
@@ -237,7 +237,7 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
   try {
     const emisor = [perfil?.nombre, perfil?.apellidos].filter(Boolean).join(' ') || 'Tu proveedor'
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `${emisor} <facturas@resend.dev>`,
       to: factura.clientes.email,
       subject: `Factura ${factura.numero} — ${formatCurrency(factura.total)}`,

@@ -3,7 +3,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { render } from '@react-email/components'
 import { createElement } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { resend } from '@/lib/resend/client'
+import { getResend } from '@/lib/resend/client'
 import { FacturaPDF } from '@/components/facturas/FacturaPDF'
 import { FacturaEmail } from '@/emails/FacturaEmail'
 import { formatDate } from '@/lib/utils'
@@ -93,7 +93,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     )
 
     // 3. Enviar email con Resend (PDF adjunto)
-    const { error: errorResend } = await resend.emails.send({
+    const { error: errorResend } = await getResend().emails.send({
       from: `${nombreEmisor} <facturas@resend.dev>`,
       to: factura.cliente.email,
       subject: `Factura ${factura.numero} de ${nombreEmisor}`,
