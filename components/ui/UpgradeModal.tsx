@@ -121,6 +121,7 @@ export function UpgradeModal({ abierto, onCerrar, planActual, motivo = 'limite_f
         <div className="mt-5 flex flex-col gap-2">
           {planActual !== 'pro' && (
             <button
+              type="button"
               onClick={iniciarCheckout}
               disabled={!!cargandoPlan}
               className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
@@ -131,12 +132,14 @@ export function UpgradeModal({ abierto, onCerrar, planActual, motivo = 'limite_f
             </button>
           )}
           <button
+            type="button"
             onClick={() => router.push('/configuracion/planes')}
             className="w-full rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Ver todos los planes
           </button>
           <button
+            type="button"
             onClick={onCerrar}
             className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
           >
