@@ -8,7 +8,7 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'FacturApp — Facturación para autónomos',
+  title: 'FacturX — Facturación para autónomos',
   description: 'Crea y gestiona tus facturas de forma sencilla. Diseñado para autónomos españoles.',
 }
 

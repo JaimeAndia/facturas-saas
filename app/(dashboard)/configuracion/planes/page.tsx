@@ -5,7 +5,7 @@ import type { Profile } from '@/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Planes — FacturApp',
+  title: 'Planes — FacturX',
 }
 
 export default async function PlanesPage() {

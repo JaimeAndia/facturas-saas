@@ -2,12 +2,20 @@ import { createClient } from '@/lib/supabase/server'
 import { PLANES } from '@/types'
 import type { Profile } from '@/types'
 import type { Metadata } from 'next'
+import { SeccionStripeConnect } from '@/components/configuracion/SeccionStripeConnect'
+import { SeccionSuscripcion } from '@/components/configuracion/SeccionSuscripcion'
+import { SeccionIdentidadDigital } from '@/components/configuracion/SeccionIdentidadDigital'
 
 export const metadata: Metadata = {
-  title: 'Configuración — FacturApp',
+  title: 'Configuración — FacturX',
 }
 
-export default async function ConfiguracionPage() {
+interface PageProps {
+  searchParams: Promise<{ stripe?: string }>
+}
+
+export default async function ConfiguracionPage({ searchParams }: PageProps) {
+  const { stripe: stripeParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -47,6 +55,7 @@ export default async function ConfiguracionPage() {
             { etiqueta: 'Ciudad', valor: perfil.ciudad },
             { etiqueta: 'Código postal', valor: perfil.codigo_postal },
             { etiqueta: 'Provincia', valor: perfil.provincia },
+            { etiqueta: 'IBAN', valor: (perfil as unknown as { iban: string | null }).iban },
           ].map(({ etiqueta, valor }) => (
             <div key={etiqueta} className="flex flex-col gap-0.5">
               <dt className="text-xs font-medium text-gray-400">{etiqueta}</dt>
@@ -64,36 +73,25 @@ export default async function ConfiguracionPage() {
         </div>
       </section>
 
-      {/* Plan actual */}
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Plan actual</h2>
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-base font-bold text-gray-900">{planActual.nombre}</p>
-            <p className="text-sm text-gray-500">
-              {planActual.precio === 0 ? 'Gratis' : `${planActual.precio} €/mes`}
-            </p>
-            <ul className="mt-2 space-y-1">
-              {planActual.features.map((feature: string) => (
-                <li key={feature} className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {perfil.plan !== 'pro' && (
-            <a
-              href="/configuracion/planes"
-              className="inline-flex h-9 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Mejorar plan
-            </a>
-          )}
-        </div>
-      </section>
+      {/* Cobros online vía Stripe Connect */}
+      <SeccionStripeConnect
+        stripeAccountStatus={(perfil as unknown as { stripe_account_status: string | null }).stripe_account_status as 'not_connected' | 'pending' | 'active' | null}
+        toastParam={stripeParam}
+      />
+
+      {/* Identidad digital XRPL */}
+      <SeccionIdentidadDigital
+        xrplAddress={perfil.xrpl_address}
+        esPro={perfil.plan === 'pro' || !!(perfil.xrpl_addon)}
+        isTestnet={(process.env.XRPL_NETWORK ?? '').includes('altnet')}
+      />
+
+      {/* Plan y suscripción */}
+      <SeccionSuscripcion
+        plan={perfil.plan}
+        planStatus={perfil.plan_status ?? null}
+        tieneStripeCustomer={!!perfil.stripe_customer_id}
+      />
     </div>
   )
 }

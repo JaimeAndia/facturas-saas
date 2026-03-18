@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Recuperar contraseña — FacturApp',
+  title: 'Recuperar contraseña — FacturX',
 }
 
 // Server Action para solicitar reset de contraseña

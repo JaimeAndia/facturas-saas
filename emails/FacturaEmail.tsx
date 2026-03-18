@@ -35,6 +35,10 @@ interface FacturaEmailProps {
   total: number
   notas?: string | null
   urlDescarga: string
+  urlPago?: string | null
+  urlGestionSuscripcion?: string | null
+  urlCancelacion?: string | null
+  fechaLimiteCancelacion?: string | null
 }
 
 function eur(n: number) {
@@ -56,6 +60,10 @@ export function FacturaEmail({
   total,
   notas,
   urlDescarga,
+  urlPago,
+  urlGestionSuscripcion,
+  urlCancelacion,
+  fechaLimiteCancelacion,
 }: FacturaEmailProps) {
   return (
     <Html lang="es">
@@ -186,6 +194,36 @@ export function FacturaEmail({
 
           <Hr style={estilos.hr} />
 
+          {/* CTA pago online — solo si hay link de cobro */}
+          {urlPago && (
+            <>
+              <Section style={{ ...estilos.section, textAlign: 'center' }}>
+                <Text style={estilos.texto}>
+                  Puede abonar esta factura de forma segura usando el siguiente botón:
+                </Text>
+                <Button href={urlPago} style={estilos.botonPago}>
+                  Pagar ahora
+                </Button>
+              </Section>
+              <Hr style={estilos.hr} />
+            </>
+          )}
+
+          {/* CTA gestión de suscripción — solo en cobros automáticos */}
+          {urlGestionSuscripcion && (
+            <>
+              <Section style={{ ...estilos.section, textAlign: 'center' }}>
+                <Text style={estilos.textoGris}>
+                  Puede gestionar o cancelar su suscripción en cualquier momento:
+                </Text>
+                <Button href={urlGestionSuscripcion} style={estilos.botonPortal}>
+                  Gestionar suscripción
+                </Button>
+              </Section>
+              <Hr style={estilos.hr} />
+            </>
+          )}
+
           {/* CTA descarga */}
           <Section style={{ ...estilos.section, textAlign: 'center' }}>
             <Text style={estilos.texto}>
@@ -196,10 +234,26 @@ export function FacturaEmail({
             </Button>
           </Section>
 
+          {/* CTA cancelación de suscripción — solo en recurrentes con plazo de cancelación */}
+          {urlCancelacion && fechaLimiteCancelacion && (
+            <>
+              <Hr style={estilos.hr} />
+              <Section style={{ ...estilos.section, backgroundColor: '#fff7ed' }}>
+                <Text style={{ ...estilos.texto, color: '#92400e', fontSize: '13px' }}>
+                  Si no desea continuar con este servicio, puede cancelar su suscripción antes del <strong>{fechaLimiteCancelacion}</strong>.
+                  Pasada esta fecha, si la factura no ha sido pagada ni cancelada, el servicio se cancelará automáticamente.
+                </Text>
+                <Button href={urlCancelacion} style={estilos.botonCancelar}>
+                  Cancelar suscripción
+                </Button>
+              </Section>
+            </>
+          )}
+
           {/* Footer */}
           <Section style={estilos.footer}>
             <Text style={estilos.footerTexto}>
-              Este email ha sido enviado por <strong>{nombreEmisor}</strong> mediante FacturApp.
+              Este email ha sido enviado por <strong>{nombreEmisor}</strong> mediante FacturX.
               Por favor, no responda a este correo.
             </Text>
           </Section>
@@ -347,6 +401,26 @@ const estilos = {
     textAlign: 'right' as const,
     padding: '6px 10px',
   },
+  botonPago: {
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+    fontSize: '16px',
+    fontWeight: '700',
+    borderRadius: '8px',
+    padding: '14px 36px',
+    textDecoration: 'none',
+    display: 'inline-block',
+  },
+  botonPortal: {
+    backgroundColor: '#6d28d9',
+    color: '#ffffff',
+    fontSize: '14px',
+    fontWeight: '600',
+    borderRadius: '8px',
+    padding: '10px 24px',
+    textDecoration: 'none',
+    display: 'inline-block',
+  },
   boton: {
     backgroundColor: '#1e40af',
     color: '#ffffff',
@@ -354,6 +428,16 @@ const estilos = {
     fontWeight: '600',
     borderRadius: '8px',
     padding: '12px 28px',
+    textDecoration: 'none',
+    display: 'inline-block',
+  },
+  botonCancelar: {
+    backgroundColor: '#dc2626',
+    color: '#ffffff',
+    fontSize: '13px',
+    fontWeight: '600',
+    borderRadius: '8px',
+    padding: '8px 20px',
     textDecoration: 'none',
     display: 'inline-block',
   },

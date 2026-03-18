@@ -8,38 +8,60 @@ interface Props {
   amount: string
   dueDate: string
   paymentUrl: string
-  reminderNumber: number
+  reminderNumber: 1 | 2 | 3
 }
 
-export function PaymentReminderEmail({ invoiceNumber, clientName, amount, dueDate, paymentUrl, reminderNumber }: Props) {
-  const isUrgent = reminderNumber > 1
+// Configuración de tono por número de recordatorio
+const CONFIG = {
+  1: {
+    previewText: (n: string) => `Recordatorio de pago — Factura ${n}`,
+    headerBg: '#d97706',
+    headerTitle: 'Recordatorio de pago',
+    intro: (client: string, dueDate: string) =>
+      `Estimado/a ${client}, te recordamos que la factura que figura a continuación venció el ${dueDate}. Si ya has realizado el pago, por favor ignora este mensaje.`,
+    cta: 'Pagar ahora',
+  },
+  2: {
+    previewText: (n: string) => `2º recordatorio — Factura ${n} pendiente de pago`,
+    headerBg: '#ea580c',
+    headerTitle: '2º recordatorio de pago',
+    intro: (client: string, dueDate: string) =>
+      `Estimado/a ${client}, te informamos de que seguimos sin recibir el pago de la siguiente factura, vencida el ${dueDate}. Te pedimos que regularices la situación a la mayor brevedad posible.`,
+    cta: 'Realizar el pago',
+  },
+  3: {
+    previewText: (n: string) => `AVISO FINAL — Factura ${n} impagada`,
+    headerBg: '#dc2626',
+    headerTitle: 'Aviso final de pago',
+    intro: (client: string, dueDate: string) =>
+      `Estimado/a ${client}, este es el último aviso antes de proceder a iniciar las acciones oportunas para el cobro de la siguiente factura, vencida el ${dueDate}. Si no se recibe el pago, la deuda será trasladada a un servicio de recobro.`,
+    cta: 'Pagar de inmediato',
+  },
+}
 
-  const subject = isUrgent
-    ? `URGENTE — Factura ${invoiceNumber} pendiente de pago`
-    : `Recordatorio — Factura ${invoiceNumber} pendiente de pago`
-
-  const headerBg = isUrgent ? '#dc2626' : '#d97706'
-
-  const bodyText = isUrgent
-    ? `Han pasado varios días desde el vencimiento de tu factura. Por favor, regulariza el pago a la mayor brevedad posible para evitar posibles recargos.`
-    : `Te recordamos que tienes una factura pendiente de pago que venció el ${dueDate}. Si ya has realizado el pago, por favor ignora este mensaje.`
+export function PaymentReminderEmail({
+  invoiceNumber,
+  clientName,
+  amount,
+  dueDate,
+  paymentUrl,
+  reminderNumber,
+}: Props) {
+  const cfg = CONFIG[reminderNumber]
 
   return (
     <Html lang="es">
       <Head />
-      <Preview>{subject}</Preview>
+      <Preview>{cfg.previewText(invoiceNumber)}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Section style={{ ...styles.header, backgroundColor: headerBg }}>
-            <Heading style={styles.headerTitle}>
-              {isUrgent ? '⚠ Recordatorio urgente' : 'Recordatorio de pago'}
-            </Heading>
-            <Text style={styles.headerSub}>Factura {invoiceNumber} — Recordatorio nº {reminderNumber}</Text>
+          <Section style={{ ...styles.header, backgroundColor: cfg.headerBg }}>
+            <Heading style={styles.headerTitle}>{cfg.headerTitle}</Heading>
+            <Text style={styles.headerSub}>Factura {invoiceNumber} — Recordatorio nº {reminderNumber} de 3</Text>
           </Section>
 
           <Section style={styles.section}>
-            <Text style={styles.text}>Estimado/a <strong>{clientName}</strong>,</Text>
-            <Text style={styles.text}>{bodyText}</Text>
+            <Text style={styles.text}>{cfg.intro(clientName, dueDate)}</Text>
           </Section>
 
           <Section style={styles.detailBox}>
@@ -48,9 +70,9 @@ export function PaymentReminderEmail({ invoiceNumber, clientName, amount, dueDat
             <Text style={styles.detailRow}>Fecha de vencimiento: <strong>{dueDate}</strong></Text>
           </Section>
 
-          <Section style={{ ...styles.section, textAlign: 'center' }}>
-            <Button href={paymentUrl} style={{ ...styles.button, backgroundColor: headerBg }}>
-              Pagar ahora
+          <Section style={{ ...styles.section, textAlign: 'center' as const }}>
+            <Button href={paymentUrl} style={{ ...styles.button, backgroundColor: cfg.headerBg }}>
+              {cfg.cta}
             </Button>
           </Section>
 
@@ -59,7 +81,7 @@ export function PaymentReminderEmail({ invoiceNumber, clientName, amount, dueDat
           <Section style={styles.footer}>
             <Text style={styles.footerText}>
               Si tienes alguna duda sobre esta factura, contacta directamente con el emisor.
-              Este email ha sido generado automáticamente por FacturApp.
+              Este email ha sido generado automáticamente por FacturX.
             </Text>
           </Section>
         </Container>

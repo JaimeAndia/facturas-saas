@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Crear cuenta — FacturApp',
+  title: 'Crear cuenta — FacturX',
 }
 
 // Server Action para el registro

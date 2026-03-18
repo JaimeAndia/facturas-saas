@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Iniciar sesión — FacturApp',
+  title: 'Iniciar sesión — FacturX',
 }
 
 // Server Action para el login
@@ -13,24 +13,26 @@ async function loginAction(formData: FormData) {
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const next = (formData.get('next') as string) || '/dashboard'
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+    redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
   }
 
-  redirect('/dashboard')
+  redirect(next.startsWith('/') ? next : '/dashboard')
 }
 
 interface PageProps {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams
   const errorMensaje = params.error
+  const next = params.next ?? '/dashboard'
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
@@ -49,6 +51,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       )}
 
       <form action={loginAction} className="space-y-4">
+        <input type="hidden" name="next" value={next} />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="email" className="text-sm font-medium text-gray-700">
             Email

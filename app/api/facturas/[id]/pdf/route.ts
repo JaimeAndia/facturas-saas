@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       .single(),
     supabase
       .from('profiles')
-      .select('nombre, apellidos, nif, email, telefono, direccion, ciudad, codigo_postal, provincia, logo_url')
+      .select('nombre, apellidos, nif, email, telefono, direccion, ciudad, codigo_postal, provincia, logo_url, iban')
       .eq('id', user.id)
       .single(),
   ])
@@ -53,10 +53,33 @@ export async function GET(_request: Request, { params }: RouteParams) {
     codigo_postal: null, provincia: null, logo_url: null,
   }
 
+  // Obtener tx hash XRPL si el pago está liquidado
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: logRow } = await (supabase.from('payment_logs') as any)
+    .select('xrpl_settlement_tx')
+    .eq('invoice_id', id)
+    .eq('xrpl_settlement_status', 'settled')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single() as { data: { xrpl_settlement_tx: string | null } | null }
+
+  const xrplTxHash = logRow?.xrpl_settlement_tx ?? null
+  const isTestnet = (process.env.XRPL_NETWORK ?? '').includes('altnet')
+  const explorerBase = isTestnet
+    ? 'https://testnet.xrpl.org/transactions'
+    : 'https://xrpl.org/transactions'
+  const xrplExplorerUrl = xrplTxHash ? `${explorerBase}/${xrplTxHash}` : null
+
+  // Datos de registro blockchain (integridad de la factura)
+  const blockchainTx = (raw as { blockchain_tx?: string | null }).blockchain_tx ?? null
+  const blockchainHash = (raw as { blockchain_hash?: string | null }).blockchain_hash ?? null
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://facturx.es'
+  const verifyUrl = blockchainTx ? `${appUrl}/verify/${id}` : null
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const buffer = await (renderToBuffer as any)(
-      createElement(FacturaPDF, { factura, perfil })
+      createElement(FacturaPDF, { factura, perfil, xrplTxHash, xrplExplorerUrl, blockchainTx, blockchainHash, verifyUrl })
     )
 
     return new NextResponse(buffer as ArrayBuffer, {

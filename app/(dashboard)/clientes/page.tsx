@@ -4,7 +4,7 @@ import type { Cliente } from '@/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Clientes — FacturApp',
+  title: 'Clientes — FacturX',
 }
 
 interface PageProps {

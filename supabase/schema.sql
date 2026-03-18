@@ -1,5 +1,5 @@
 -- =============================================================
--- ESQUEMA DE BASE DE DATOS — FacturApp
+-- ESQUEMA DE BASE DE DATOS — FacturX
 -- Ejecutar en el SQL Editor de Supabase
 -- =============================================================
 

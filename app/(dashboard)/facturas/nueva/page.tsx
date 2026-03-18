@@ -6,7 +6,7 @@ import type { Cliente } from '@/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Nueva factura — FacturApp',
+  title: 'Nueva factura — FacturX',
 }
 
 export default async function NuevaFacturaPage() {

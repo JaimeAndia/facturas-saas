@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getResend } from '@/lib/resend/client'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { registrarEventoBlockchain, type BlockchainEventType } from '@/lib/blockchain-event'
+import { recordXrplEvent } from '@/lib/xrpl-events'
 
 export type ResultadoAccion<T = void> =
   | { ok: true; datos?: T }
@@ -105,6 +107,26 @@ export async function crearFactura(
   }
 
   revalidatePath('/facturas')
+
+  // Registrar en XRPL: invoice_created + emision si ya es emitida (fire-and-forget)
+  recordXrplEvent({
+    userId:    user.id,
+    eventType: 'invoice_created',
+    invoiceId: factura.id,
+    payload: {
+      invoiceNumber: factura.numero,
+      amount:        datos.total,
+      currency:      'EUR',
+      estado:        datos.estado,
+    },
+  }).catch(() => {})
+
+  if (datos.estado === 'emitida') {
+    registrarEventoBlockchain(factura.id, user.id, 'emision').catch(err => {
+      console.error('[BlockchainEvent] Error en crearFactura (emision):', err)
+    })
+  }
+
   return { ok: true, datos: { id: factura.id, numero: factura.numero } }
 }
 
@@ -125,6 +147,28 @@ export async function actualizarEstadoFactura(
 
   revalidatePath('/facturas')
   revalidatePath(`/facturas/${id}`)
+
+  // Registrar evento blockchain fire-and-forget según el nuevo estado
+  const estadosBlockchain: Partial<Record<string, BlockchainEventType>> = {
+    emitida: 'emision',
+    cancelada: 'cancelacion',
+    vencida: 'vencimiento',
+  }
+  const tipoEvento = estadosBlockchain[estado]
+  if (tipoEvento) {
+    registrarEventoBlockchain(id, user.id, tipoEvento).catch(err => {
+      console.error('[BlockchainEvent] Error fire-and-forget en actualizarEstadoFactura:', err)
+    })
+  }
+
+  // XRPL: invoice_cancelled cuando se cancela manualmente
+  if (estado === 'cancelada') {
+    recordXrplEvent({
+      userId: user.id, eventType: 'invoice_cancelled', invoiceId: id,
+      payload: { reason: 'manual', cancelledAt: new Date().toISOString() },
+    }).catch(() => {})
+  }
+
   return { ok: true }
 }
 
@@ -238,7 +282,7 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
     const emisor = [perfil?.nombre, perfil?.apellidos].filter(Boolean).join(' ') || 'Tu proveedor'
 
     await getResend().emails.send({
-      from: `${emisor} <facturas@resend.dev>`,
+      from: process.env.RESEND_FROM ?? `${emisor} <onboarding@resend.dev>`,
       to: factura.clientes.email,
       subject: `Factura ${factura.numero} — ${formatCurrency(factura.total)}`,
       html: `
@@ -274,6 +318,16 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
     if (factura.estado === 'borrador') {
       await actualizarEstadoFactura(id, 'emitida')
     }
+
+    // XRPL: invoice_sent (fire-and-forget)
+    recordXrplEvent({
+      userId: user.id, eventType: 'invoice_sent', invoiceId: id,
+      payload: {
+        invoiceNumber: factura.numero,
+        clientEmail:   factura.clientes?.email ?? null,
+        amount:        factura.total,
+      },
+    }).catch(() => {})
 
     return { ok: true }
   } catch {

@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { useSubscription } from '@/hooks/useSubscription'
+import Link from 'next/link'
 import { crearFactura } from '@/app/(dashboard)/facturas/actions'
-import { crearRecurrente } from '@/app/(dashboard)/facturas/recurrentes/actions'
 import { formatCurrency } from '@/lib/utils'
 import type { Cliente } from '@/types'
 
@@ -190,6 +190,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const { puedeCrear, plan, cargando: cargandoSub, refrescar } = useSubscription()
+  const puedeRecurrente = plan === 'basico' || plan === 'pro'
   const [modalUpgrade, setModalUpgrade] = useState(false)
   const [motivoUpgrade, setMotivoUpgrade] = useState<'limite_facturas' | 'factura_recurrente'>('limite_facturas')
 
@@ -202,8 +203,6 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   const [ivaPorcentaje, setIvaPorcentaje] = useState<number>(21)
   const [irpfPorcentaje, setIrpfPorcentaje] = useState<number>(15)
   const [notas, setNotas] = useState('')
-  const [esRecurrente, setEsRecurrente] = useState(false)
-  const [frecuencia, setFrecuencia] = useState<'mensual' | 'trimestral' | 'anual'>('mensual')
   const [lineas, setLineas] = useState<LineaFormulario[]>([crearLineaVacia(0)])
   const [errores, setErrores] = useState<ErroresForm>({})
   const [errorServidor, setErrorServidor] = useState<string | null>(null)
@@ -298,17 +297,13 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       })
 
       if (resultado.ok && resultado.datos) {
-        // Si es recurrente, crear la programación
-        if (esRecurrente && plan === 'pro') {
-          await crearRecurrente(resultado.datos.id, frecuencia)
-        }
         router.push(`/facturas/${resultado.datos.id}`)
       } else if (!resultado.ok) {
         setErrorServidor(resultado.error)
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteId, numeroManual, fechaEmision, fechaVencimiento, ivaPorcentaje, irpfPorcentaje, notas, lineas, baseImponible, ivaImporte, irpfImporte, total, puedeCrear, cargandoSub, esRecurrente, frecuencia, plan])
+  }, [clienteId, numeroManual, fechaEmision, fechaVencimiento, ivaPorcentaje, irpfPorcentaje, notas, lineas, baseImponible, ivaImporte, irpfImporte, total, puedeCrear, cargandoSub])
 
   return (
     <div className="space-y-6">
@@ -568,69 +563,49 @@ export function FormFactura({ clientes }: FormFacturaProps) {
         />
       </div>
 
-      {/* Factura recurrente — solo Plan Pro */}
+      {/* Factura recurrente — enlace al formulario dedicado */}
       <div className={`rounded-xl border p-5 ${
-        plan === 'pro'
-          ? 'border-violet-200 bg-violet-50'
-          : 'border-gray-200 bg-gray-50 opacity-60'
+        puedeRecurrente ? 'border-violet-200 bg-violet-50' : 'border-gray-200 bg-gray-50'
       }`}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <button
-              type="button"
-              onClick={() => plan === 'pro' ? setEsRecurrente(!esRecurrente) : (setMotivoUpgrade('factura_recurrente'), setModalUpgrade(true))}
-              className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                esRecurrente && plan === 'pro'
-                  ? 'border-violet-600 bg-violet-600'
-                  : 'border-gray-300 bg-white'
-              }`}
-              aria-checked={esRecurrente}
-              role="checkbox"
-            >
-              {esRecurrente && plan === 'pro' && (
-                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
+              puedeRecurrente ? 'bg-violet-100' : 'bg-gray-100'
+            }`}>
+              <svg className={`h-5 w-5 ${puedeRecurrente ? 'text-violet-600' : 'text-gray-400'}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Repetir esta factura</p>
+              <p className={`text-sm font-semibold ${puedeRecurrente ? 'text-gray-900' : 'text-gray-400'}`}>
+                ¿Necesitas que se repita?
+              </p>
               <p className="text-xs text-gray-500">
-                {plan === 'pro'
-                  ? 'Se generará automáticamente según la frecuencia elegida.'
-                  : 'Disponible en el Plan Pro.'}
+                {puedeRecurrente
+                  ? 'Crea una factura recurrente con frecuencia personalizada.'
+                  : 'Disponible en el Plan Básico o superior.'}
               </p>
             </div>
           </div>
-          {plan !== 'pro' && (
+          {puedeRecurrente ? (
+            <Link
+              href="/facturas/recurrentes/nueva"
+              className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+            >
+              Crear recurrente →
+            </Link>
+          ) : (
             <button
               type="button"
               onClick={() => { setMotivoUpgrade('factura_recurrente'); setModalUpgrade(true) }}
               className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
             >
-              Plan Pro
+              Plan Básico
             </button>
           )}
         </div>
-
-        {esRecurrente && plan === 'pro' && (
-          <div className="mt-4 flex gap-2">
-            {(['mensual', 'trimestral', 'anual'] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFrecuencia(f)}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors ${
-                  frecuencia === f
-                    ? 'border-violet-600 bg-violet-600 text-white'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-violet-400'
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Modal de upgrade si se alcanza el límite */}

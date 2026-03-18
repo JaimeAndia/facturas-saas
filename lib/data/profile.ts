@@ -10,7 +10,7 @@ export const getPerfil = cache(async (userId: string) => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
-    .select('nombre, apellidos, email, nif, telefono, direccion, ciudad, codigo_postal, provincia, plan, plan_status')
+    .select('nombre, apellidos, email, nif, telefono, direccion, ciudad, codigo_postal, provincia, plan, plan_status, xrpl_addon, xrpl_address, stripe_account_status')
     .eq('id', userId)
     .single()
   return data

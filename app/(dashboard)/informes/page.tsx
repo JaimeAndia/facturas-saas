@@ -4,7 +4,7 @@ import type { Factura, Cliente } from '@/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Informes — FacturApp',
+  title: 'Informes — FacturX',
 }
 
 interface FacturaConCliente extends Factura {
@@ -21,6 +21,8 @@ export default async function InformesPage() {
     .eq('user_id', user!.id)
     .neq('estado', 'borrador')
     .neq('estado', 'cancelada')
+    // Excluir facturas POS no pagadas (cobros instantáneos pendientes de confirmación)
+    .or('source.is.null,source.neq.pos,and(source.eq.pos,estado.eq.pagada)')
     .order('fecha_emision', { ascending: false })
 
   const facturas = (data as FacturaConCliente[] | null) ?? []

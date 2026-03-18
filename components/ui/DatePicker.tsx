@@ -69,6 +69,7 @@ export function DatePicker({
   // Sincronizar mesVista cuando cambia value externamente
   useEffect(() => {
     const d = parseISO(value)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (d) setMesVista(new Date(d.getFullYear(), d.getMonth(), 1))
   }, [value])
 

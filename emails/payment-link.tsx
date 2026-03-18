@@ -39,7 +39,7 @@ export function PaymentLinkEmail({ invoiceNumber, clientName, amount, paymentUrl
 
           <Section style={styles.footer}>
             <Text style={styles.footerText}>
-              Este enlace de pago ha sido enviado por <strong>{companyName}</strong> mediante FacturApp.
+              Este enlace de pago ha sido enviado por <strong>{companyName}</strong> mediante FacturX.
               Si no esperabas este email, puedes ignorarlo.
             </Text>
           </Section>

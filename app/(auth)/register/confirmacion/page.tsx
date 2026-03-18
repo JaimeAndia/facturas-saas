@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Confirma tu email — FacturApp',
+  title: 'Confirma tu email — FacturX',
 }
 
 // Página de confirmación tras el registro

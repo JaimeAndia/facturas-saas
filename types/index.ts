@@ -6,6 +6,7 @@ export type FacturaRecurrente = Database['public']['Tables']['facturas_recurrent
 export type Cliente = Database['public']['Tables']['clientes']['Row']
 export type Factura = Database['public']['Tables']['facturas']['Row']
 export type LineaFactura = Database['public']['Tables']['lineas_factura']['Row']
+export type Subscription = Database['public']['Tables']['subscriptions']['Row']
 
 // Factura con sus líneas y datos del cliente
 export type FacturaCompleta = Factura & {

@@ -94,7 +94,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
     // 3. Enviar email con Resend (PDF adjunto)
     const { error: errorResend } = await getResend().emails.send({
-      from: `${nombreEmisor} <facturas@resend.dev>`,
+      from: process.env.RESEND_FROM ?? `${nombreEmisor} <onboarding@resend.dev>`,
       to: factura.cliente.email,
       subject: `Factura ${factura.numero} de ${nombreEmisor}`,
       html,

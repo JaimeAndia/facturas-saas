@@ -8,24 +8,32 @@ type PerfilPDF = Pick<
   Profile,
   | 'nombre' | 'apellidos' | 'nif' | 'email'
   | 'telefono' | 'direccion' | 'ciudad' | 'codigo_postal' | 'provincia'
-  | 'logo_url'
+  | 'logo_url' | 'iban'
 >
 
 export interface FacturaPDFProps {
   factura: Factura & { lineas: LineaFactura[]; cliente: Cliente }
   perfil: PerfilPDF | null
+  xrplTxHash?: string | null
+  xrplExplorerUrl?: string | null
+  blockchainTx?: string | null      // TX del registro de la factura (distinto al settlement de pago)
+  blockchainHash?: string | null    // SHA-256 del contenido
+  verifyUrl?: string | null         // URL pública de verificación
 }
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
 
-const AZUL       = '#1e40af'
-const AZUL_CLARO = '#dbeafe'
-const GRIS_900   = '#111827'
-const GRIS_600   = '#4b5563'
-const GRIS_400   = '#9ca3af'
-const GRIS_100   = '#f3f4f6'
-const ROJO       = '#dc2626'
-const BLANCO     = '#ffffff'
+const AZUL         = '#1e40af'
+const AZUL_CLARO   = '#dbeafe'
+const GRIS_900     = '#111827'
+const GRIS_600     = '#4b5563'
+const GRIS_400     = '#9ca3af'
+const GRIS_100     = '#f3f4f6'
+const ROJO         = '#dc2626'
+const BLANCO       = '#ffffff'
+const BLOCKCHAIN_BG   = '#0f172a'
+const BLOCKCHAIN_DARK = '#1e293b'
+const VERDE_CHAIN     = '#34d399'
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 
@@ -240,6 +248,34 @@ const s = StyleSheet.create({
     color: BLANCO,
   },
 
+  // ── IBAN / Datos bancarios ─────────────────────────────────────────────────
+
+  ibanBox: {
+    marginTop: 20,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  ibanLabel: {
+    fontSize: 7,
+    fontFamily: 'Helvetica-Bold',
+    color: AZUL,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  ibanValor: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: GRIS_900,
+  },
+  ibanNota: {
+    fontSize: 8,
+    color: GRIS_600,
+    marginTop: 3,
+  },
+
   // ── Notas ─────────────────────────────────────────────────────────────────
 
   notasBox: {
@@ -266,6 +302,63 @@ const s = StyleSheet.create({
     fontSize: 8,
     color: AZUL,
     lineHeight: 1.5,
+  },
+
+  // ── Blockchain ────────────────────────────────────────────────────────────
+
+  blockchainBox: {
+    marginTop: 24,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: BLOCKCHAIN_BG,
+  },
+  blockchainHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: BLOCKCHAIN_DARK,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  blockchainDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: VERDE_CHAIN,
+  },
+  blockchainTitulo: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: VERDE_CHAIN,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  blockchainBody: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 5,
+  },
+  blockchainLabel: {
+    fontSize: 7,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  blockchainHash: {
+    fontSize: 7.5,
+    fontFamily: 'Helvetica',
+    color: '#94a3b8',
+  },
+  blockchainUrl: {
+    fontSize: 7.5,
+    color: VERDE_CHAIN,
+    textDecoration: 'underline',
+  },
+  blockchainNota: {
+    fontSize: 7,
+    color: '#475569',
+    lineHeight: 1.5,
+    marginTop: 2,
   },
 
   // ── Footer ────────────────────────────────────────────────────────────────
@@ -301,7 +394,7 @@ function lineas(partes: (string | null | undefined)[], sep = ', ') {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-export function FacturaPDF({ factura, perfil }: FacturaPDFProps) {
+export function FacturaPDF({ factura, perfil, xrplTxHash, xrplExplorerUrl, blockchainTx, blockchainHash, verifyUrl }: FacturaPDFProps) {
   const nombreEmisor = lineas([perfil?.nombre, perfil?.apellidos]) || 'Sin nombre'
   const dirEmisor    = lineas([perfil?.direccion, perfil?.codigo_postal, perfil?.ciudad, perfil?.provincia])
   const dirCliente   = lineas([
@@ -315,7 +408,7 @@ export function FacturaPDF({ factura, perfil }: FacturaPDFProps) {
   const lineasOrdenadas = [...factura.lineas].sort((a, b) => a.orden - b.orden)
 
   return (
-    <Document title={`Factura ${factura.numero}`} author={nombreEmisor} creator="FacturApp">
+    <Document title={`Factura ${factura.numero}`} author={nombreEmisor} creator="FacturX">
       <Page size="A4" style={s.page}>
 
         {/* Franja de acento */}
@@ -425,6 +518,15 @@ export function FacturaPDF({ factura, perfil }: FacturaPDFProps) {
             </View>
           </View>
 
+          {/* ── Datos bancarios para transferencia ── */}
+          {perfil?.iban && (
+            <View style={s.ibanBox}>
+              <Text style={s.ibanLabel}>Pago por transferencia bancaria</Text>
+              <Text style={s.ibanValor}>{perfil.iban}</Text>
+              <Text style={s.ibanNota}>Indique el número de factura {factura.numero} en el concepto de la transferencia.</Text>
+            </View>
+          )}
+
           {/* ── Notas ── */}
           {factura.notas && (
             <View style={s.notasBox}>
@@ -441,12 +543,66 @@ export function FacturaPDF({ factura, perfil }: FacturaPDFProps) {
             </Text>
           </View>
 
+          {/* ── Verificación Blockchain ── */}
+          {xrplTxHash && (
+            <View style={s.blockchainBox}>
+              <View style={s.blockchainHeader}>
+                <View style={s.blockchainDot} />
+                <Text style={s.blockchainTitulo}>Verificación Blockchain · XRP Ledger</Text>
+              </View>
+              <View style={s.blockchainBody}>
+                <Text style={s.blockchainLabel}>Transaction Hash</Text>
+                <Text style={s.blockchainHash}>{xrplTxHash}</Text>
+                {xrplExplorerUrl && (
+                  <>
+                    <Text style={s.blockchainLabel}>Verificar en</Text>
+                    <Text style={s.blockchainUrl}>{xrplExplorerUrl}</Text>
+                  </>
+                )}
+                <Text style={s.blockchainNota}>
+                  Este pago ha sido registrado de forma permanente e inalterable en el XRP Ledger.
+                  El hash anterior es prueba criptográfica de su existencia y no puede ser modificado ni eliminado.
+                </Text>
+              </View>
+            </View>
+          )}
+
         </View>
+
+        {/* ── Registro Blockchain (integridad de la factura) ── */}
+        {blockchainTx && (
+          <View style={s.blockchainBox}>
+            <View style={s.blockchainHeader}>
+              <View style={s.blockchainDot} />
+              <Text style={s.blockchainTitulo}>Registro Blockchain · XRP Ledger</Text>
+            </View>
+            <View style={s.blockchainBody}>
+              <Text style={s.blockchainLabel}>Transaction Hash</Text>
+              <Text style={s.blockchainHash}>{blockchainTx}</Text>
+              {blockchainHash && (
+                <>
+                  <Text style={s.blockchainLabel}>SHA-256 del contenido</Text>
+                  <Text style={s.blockchainHash}>{blockchainHash}</Text>
+                </>
+              )}
+              {verifyUrl && (
+                <>
+                  <Text style={s.blockchainLabel}>Verificar integridad en</Text>
+                  <Text style={s.blockchainUrl}>{verifyUrl}</Text>
+                </>
+              )}
+              <Text style={s.blockchainNota}>
+                Esta factura ha sido registrada de forma permanente en el XRP Ledger.
+                El hash anterior es prueba criptográfica de su contenido en el momento del registro.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* ── Footer ── */}
         <View style={s.footer} fixed>
-          <Text style={s.footerTexto}>{factura.numero} · {nombreEmisor}</Text>
-          <Text style={s.footerAzul}>FacturApp</Text>
+          <Text style={s.footerTexto}>{factura.numero} · {nombreEmisor}{verifyUrl ? ` · ${verifyUrl}` : ''}</Text>
+          <Text style={s.footerAzul}>FacturX</Text>
         </View>
 
       </Page>
