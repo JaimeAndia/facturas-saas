@@ -212,7 +212,13 @@ export async function duplicarFactura(
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('lineas_factura') as any).insert(lineas)
+  const { error: errorLineas } = await (supabase.from('lineas_factura') as any).insert(lineas)
+
+  if (errorLineas) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('facturas') as any).delete().eq('id', nueva.id)
+    return { ok: false, error: 'Error copiando las líneas de la factura' }
+  }
 
   revalidatePath('/facturas')
   return { ok: true, datos: { id: nueva.id } }
