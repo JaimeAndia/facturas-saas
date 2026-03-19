@@ -3,6 +3,7 @@ import { render } from '@react-email/components'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getStripe } from '@/lib/stripe/client'
 import { getResend } from '@/lib/resend/client'
+import { registrarEventoBlockchain } from '@/lib/blockchain-event'
 import { SubscriptionConfirmedEmail } from '@/emails/subscription-confirmed'
 import { formatCurrency } from '@/lib/utils'
 
@@ -79,6 +80,11 @@ export default async function PaginaExitoRecurrente({ params, searchParams }: Pa
               .from('facturas')
               .update({ estado: 'pagada', paid_at: new Date().toISOString() })
               .eq('id', factPendiente.id)
+
+            // Registrar pago en blockchain (fire-and-forget)
+            registrarEventoBlockchain(factPendiente.id, recData.user_id, 'pago').catch((err) =>
+              console.error('[recurrente-success] blockchain event error:', err)
+            )
           }
 
           // Enviar email de confirmación solo la primera vez (cobro_status no era active aún)

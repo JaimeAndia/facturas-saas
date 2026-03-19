@@ -276,7 +276,41 @@ export async function POST(request: Request) {
             .eq('id', primeraGenerada.id)
           nuevaFactura = primeraGenerada
         } else {
-          // Ciclos siguientes: generar factura nueva
+          // No hay factura sin pagar. Comprobar si es el primer cobro de la suscripción
+          // y si activar-cobro ya la marcó como pagada (sin stripe_invoice_id aún).
+          // Si es así, solo enlazar el stripe_invoice_id y salir para evitar duplicados.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const billingReason = (inv as any).billing_reason as string | undefined
+          if (billingReason === 'subscription_create') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: prePagada } = await (supabase as any)
+              .from('facturas')
+              .select('id')
+              .eq('factura_recurrente_id', recurrente.id)
+              .eq('estado', 'pagada')
+              .is('stripe_invoice_id', null)
+              .order('fecha_emision', { ascending: true })
+              .limit(1)
+              .maybeSingle() as { data: { id: string } | null }
+
+            if (prePagada) {
+              // La factura ya fue pagada por activar-cobro — solo enlazar el ID de Stripe
+              // El evento blockchain ya fue registrado por activar-cobro o success/page
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase as any)
+                .from('facturas')
+                .update({ stripe_invoice_id: inv.id })
+                .eq('id', prePagada.id)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('facturas_recurrentes') as any)
+                .update({ ultima_generacion: new Date().toISOString() })
+                .eq('id', recurrente.id)
+              console.log(`[Connect] Primera factura ya pagada por activar-cobro — enlazando ${inv.id}`)
+              break
+            }
+          }
+
+          // Ciclos siguientes (o primer ciclo sin factura previa): generar factura nueva
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: nuevoNumero } = await (supabase.rpc as any)(
             'fn_generar_numero_factura',

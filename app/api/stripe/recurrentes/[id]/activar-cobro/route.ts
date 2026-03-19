@@ -4,6 +4,7 @@ import { render } from '@react-email/components'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getStripe } from '@/lib/stripe/client'
 import { getResend } from '@/lib/resend/client'
+import { registrarEventoBlockchain } from '@/lib/blockchain-event'
 import { SubscriptionSetupEmail } from '@/emails/subscription-setup'
 import { SubscriptionConfirmedEmail } from '@/emails/subscription-confirmed'
 import { formatCurrency } from '@/lib/utils'
@@ -241,6 +242,11 @@ export async function POST(
           await (adminSupabase.from('facturas') as any)
             .update({ estado: 'pagada', paid_at: new Date().toISOString() })
             .eq('id', factPendiente.id)
+
+          // Registrar pago en blockchain (fire-and-forget)
+          registrarEventoBlockchain(factPendiente.id, user.id, 'pago').catch((err) =>
+            console.error('[activar-cobro] blockchain event error:', err)
+          )
         }
       }
 
