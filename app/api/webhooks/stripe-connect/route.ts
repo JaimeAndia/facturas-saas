@@ -63,6 +63,17 @@ export async function POST(request: Request) {
         if (session.mode === 'payment' &&
             session.metadata?.invoice_id &&
             session.payment_status === 'paid') {
+          // Idempotencia: evitar duplicados si Stripe reintenta el evento
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: logExistente } = await (supabase.from('payment_logs') as any)
+            .select('id')
+            .eq('provider_event_id', session.id)
+            .maybeSingle()
+          if (logExistente) {
+            console.log('[Connect] Evento ya procesado:', session.id)
+            break
+          }
+
           const invoiceId = session.metadata.invoice_id
           const paidAt    = new Date().toISOString()
           const amountEur = (session.amount_total ?? 0) / 100
