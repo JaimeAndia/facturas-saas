@@ -52,6 +52,12 @@ export async function POST(request: Request) {
       //  B) Setup de cobro automático recurrente (mode: subscription + recurrente_id)
       case 'checkout.session.completed': {
         const session = evento.data.object as Stripe.Checkout.Session
+        console.log('[Connect] checkout.session.completed', {
+          mode: session.mode,
+          metadata: session.metadata,
+          payment_status: session.payment_status,
+          subscription: session.subscription,
+        })
 
         // ─ A) Pago único de factura ──────────────────────────────────────────
         if (session.mode === 'payment' &&
@@ -141,17 +147,6 @@ export async function POST(request: Request) {
                 .then(() => {})
             }
 
-            recordXrplEvent({
-              userId:    facturaRow.user_id,
-              eventType: 'invoice_paid',
-              invoiceId,
-              payload: {
-                paidAt,
-                provider: 'stripe_connect',
-                amount:   amountEur,
-                currency: session.currency ?? 'eur',
-              },
-            }).catch(() => {})
           }
           break
         }
@@ -222,7 +217,7 @@ export async function POST(request: Request) {
               stripe_account_id
             ),
             facturas!factura_base_id (
-              id, base_imponible, iva_porcentaje, iva_importe,
+              id, numero, estado, base_imponible, iva_porcentaje, iva_importe,
               irpf_porcentaje, irpf_importe, total, notas, cliente_id,
               clientes ( id, nombre, email, nif, direccion, ciudad, codigo_postal, provincia, pais ),
               lineas_factura ( descripcion, cantidad, precio_unitario, subtotal, orden )
@@ -251,61 +246,98 @@ export async function POST(request: Request) {
         const cliente  = original.clientes as Cliente
         const hoy      = new Date().toISOString().split('T')[0]
 
+        // ── Determinar si reusar la primera factura generada (primer pago pendiente) ──
+        // La primera factura real (factura_recurrente_id = recurrente.id) puede estar
+        // sin pagar si el cliente activó el cobro automático antes de pagar manualmente.
+        // En ese caso, marcarla como pagada en lugar de generar un duplicado.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: nuevoNumero } = await (supabase.rpc as any)(
-          'fn_generar_numero_factura',
-          { p_user_id: recurrente.user_id }
-        ) as { data: string | null }
-
-        if (!nuevoNumero) {
-          console.error(`[Connect] Error generando número para recurrente ${recurrente.id}`)
-          break
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: nuevaFactura, error: errFactura } = await (supabase as any)
+        const { data: primeraGenerada } = await (supabase as any)
           .from('facturas')
-          .insert({
-            user_id:               recurrente.user_id,
-            cliente_id:            original.cliente_id,
-            numero:                nuevoNumero,
-            fecha_emision:         hoy,
-            estado:                'pagada',
-            base_imponible:        original.base_imponible,
-            iva_porcentaje:        original.iva_porcentaje,
-            iva_importe:           original.iva_importe,
-            irpf_porcentaje:       original.irpf_porcentaje,
-            irpf_importe:          original.irpf_importe,
-            total:                 original.total,
-            notas:                 original.notas,
-            paid_at:               new Date().toISOString(),
-            fecha_envio:           new Date().toISOString(),
-            factura_recurrente_id: recurrente.id,
-            stripe_invoice_id:     inv.id,
-          })
           .select('id, numero')
-          .single() as { data: { id: string; numero: string } | null; error: unknown }
+          .eq('factura_recurrente_id', recurrente.id)
+          .not('estado', 'in', '(pagada,cancelada)')
+          .order('fecha_emision', { ascending: true })
+          .limit(1)
+          .maybeSingle() as { data: { id: string; numero: string } | null }
 
-        if (errFactura || !nuevaFactura) {
-          console.error('[Connect] Error creando factura:', errFactura)
-          break
+        let nuevaFactura: { id: string; numero: string }
+
+        if (primeraGenerada) {
+          // Primer cobro: marcar la factura pendiente existente como pagada
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('facturas')
+            .update({
+              estado:            'pagada',
+              paid_at:           new Date().toISOString(),
+              fecha_envio:       new Date().toISOString(),
+              stripe_invoice_id: inv.id,
+            })
+            .eq('id', primeraGenerada.id)
+          nuevaFactura = primeraGenerada
+        } else {
+          // Ciclos siguientes: generar factura nueva
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: nuevoNumero } = await (supabase.rpc as any)(
+            'fn_generar_numero_factura',
+            { p_user_id: recurrente.user_id }
+          ) as { data: string | null }
+
+          if (!nuevoNumero) {
+            console.error(`[Connect] Error generando número para recurrente ${recurrente.id}`)
+            break
+          }
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: facturaCreada, error: errFactura } = await (supabase as any)
+            .from('facturas')
+            .insert({
+              user_id:               recurrente.user_id,
+              cliente_id:            original.cliente_id,
+              numero:                nuevoNumero,
+              fecha_emision:         hoy,
+              estado:                'pagada',
+              base_imponible:        original.base_imponible,
+              iva_porcentaje:        original.iva_porcentaje,
+              iva_importe:           original.iva_importe,
+              irpf_porcentaje:       original.irpf_porcentaje,
+              irpf_importe:          original.irpf_importe,
+              total:                 original.total,
+              notas:                 original.notas,
+              paid_at:               new Date().toISOString(),
+              fecha_envio:           new Date().toISOString(),
+              factura_recurrente_id: recurrente.id,
+              stripe_invoice_id:     inv.id,
+            })
+            .select('id, numero')
+            .single() as { data: { id: string; numero: string } | null; error: unknown }
+
+          if (errFactura || !facturaCreada) {
+            console.error('[Connect] Error creando factura:', errFactura)
+            break
+          }
+
+          const lineas = (original.lineas_factura ?? []).map((l: LineaFactura) => ({
+            factura_id:      facturaCreada.id,
+            descripcion:     l.descripcion,
+            cantidad:        l.cantidad,
+            precio_unitario: l.precio_unitario,
+            subtotal:        l.subtotal,
+            orden:           l.orden,
+          }))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('lineas_factura').insert(lineas)
+
+          nuevaFactura = facturaCreada
         }
-
-        const lineas = (original.lineas_factura ?? []).map((l: LineaFactura) => ({
-          factura_id:      nuevaFactura.id,
-          descripcion:     l.descripcion,
-          cantidad:        l.cantidad,
-          precio_unitario: l.precio_unitario,
-          subtotal:        l.subtotal,
-          orden:           l.orden,
-        }))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('lineas_factura').insert(lineas)
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('facturas_recurrentes') as any)
           .update({ ultima_generacion: new Date().toISOString() })
           .eq('id', recurrente.id)
+
+        // Líneas para el PDF/email — siempre las de la factura base
+        const lineasEmail = (original.lineas_factura ?? []) as LineaFactura[]
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: recLogRow } = await (supabase.from('payment_logs') as any).insert({
@@ -347,7 +379,7 @@ export async function POST(request: Request) {
                   fecha_emision:         hoy,
                   estado:                'pagada',
                   factura_recurrente_id: recurrente.id,
-                  lineas:                lineas.map((l: LineaFactura, i: number) => ({
+                  lineas:                lineasEmail.map((l: LineaFactura, i: number) => ({
                     ...original.lineas_factura[i],
                     ...l,
                   })),
@@ -364,7 +396,7 @@ export async function POST(request: Request) {
                 nombreCliente:        cliente.nombre,
                 fechaEmision:         formatDate(hoy),
                 fechaVencimiento:     null,
-                lineas:               lineas.map((l: LineaFactura) => ({
+                lineas:               lineasEmail.map((l: LineaFactura) => ({
                   descripcion:     l.descripcion,
                   cantidad:        l.cantidad,
                   precio_unitario: l.precio_unitario,
@@ -419,19 +451,6 @@ export async function POST(request: Request) {
           }
         })
 
-        recordXrplEvent({
-          userId:    recurrente.user_id,
-          eventType: 'subscription_payment',
-          invoiceId: nuevaFactura.id,
-          payload: {
-            invoiceNumber: nuevaFactura.numero,
-            amount:        original.total,
-            currency:      'EUR',
-            clientName:    cliente.nombre,
-            billingCycle:  hoy.slice(0, 7),
-            provider:      'stripe_connect',
-          },
-        }).catch(() => {})
         break
       }
 

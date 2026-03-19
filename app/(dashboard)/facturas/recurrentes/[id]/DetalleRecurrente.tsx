@@ -157,6 +157,12 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
       const res = await fetch(`/api/stripe/recurrentes/${r.id}/activar-cobro`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { mostrarToast(data.error ?? 'Error al activar', 'error'); return }
+      if (data.activated) {
+        // Suscripción creada directamente — tarjeta ya guardada, sin popup
+        mostrarToast('¡Cobro automático activado!', 'exito')
+        router.refresh()
+        return
+      }
       setSetupUrl(data.setup_url)
       setMostrandoSetupPanel(true)
       router.refresh()
@@ -357,7 +363,7 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
 
           {/* Estado: pending_setup → ver enlace de activación + desactivar */}
           {r.cobro_status === 'pending_setup' && (
-            <>
+            <div className="flex w-full items-center gap-3">
               <button
                 type="button"
                 onClick={handleActivarCobro}
@@ -376,12 +382,12 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
               >
                 {loadingDesactivar ? 'Desactivando...' : 'Desactivar cobro'}
               </button>
-            </>
+            </div>
           )}
 
           {/* Estado: active → badge + copiar portal + desactivar */}
           {r.cobro_status === 'active' && (
-            <>
+            <div className="flex w-full items-center gap-3">
               <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2">
                 <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
@@ -415,7 +421,7 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
                 </svg>
                 {loadingDesactivar ? 'Desactivando...' : 'Desactivar cobro'}
               </button>
-            </>
+            </div>
           )}
 
           {/* Estado: past_due → badge + desactivar */}
