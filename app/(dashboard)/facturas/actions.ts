@@ -228,6 +228,18 @@ export async function eliminarFactura(id: string): Promise<ResultadoAccion> {
   const { supabase, user } = await obtenerUsuario()
   if (!user) return { ok: false, error: 'No autenticado' }
 
+  // Impedir eliminar si es la factura base de una recurrente activa
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recurrenteActiva } = await (supabase.from('facturas_recurrentes') as any)
+    .select('id')
+    .eq('factura_base_id', id)
+    .eq('activo', true)
+    .maybeSingle() as { data: { id: string } | null }
+
+  if (recurrenteActiva) {
+    return { ok: false, error: 'No puedes eliminar una factura con una suscripción recurrente activa. Desactiva primero la recurrente.' }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('facturas') as any)
     .delete()
