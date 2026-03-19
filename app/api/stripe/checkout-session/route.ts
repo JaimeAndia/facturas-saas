@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -66,36 +67,80 @@ export async function POST(request: Request) {
   const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const stripe = getStripe()
 
+  // ── Verificar si esta factura es la base de una recurrente ─────────────────
+  // Si lo es, creamos/reutilizamos un Customer en la cuenta Express y guardamos
+  // el método de pago para poder activar cobros automáticos sin nuevo checkout.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recurrente } = await (supabase as any)
+    .from('facturas_recurrentes')
+    .select('id, stripe_customer_id')
+    .eq('factura_base_id', factura.id)
+    .maybeSingle() as { data: { id: string; stripe_customer_id: string | null } | null }
+
+  let stripeCustomerId: string | undefined = undefined
+
+  if (recurrente) {
+    if (recurrente.stripe_customer_id) {
+      stripeCustomerId = recurrente.stripe_customer_id
+    } else if (factura.clientes?.email) {
+      // Crear Customer en la cuenta Express para poder guardar el método de pago
+      const customer = await stripe.customers.create(
+        {
+          email: factura.clientes.email,
+          name: factura.clientes.nombre ?? undefined,
+          metadata: {
+            factura_recurrente_id: recurrente.id,
+            facturx_user_id: factura.user_id,
+          },
+        },
+        { stripeAccount: perfil.stripe_account_id }
+      )
+      stripeCustomerId = customer.id
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('facturas_recurrentes')
+        .update({ stripe_customer_id: customer.id })
+        .eq('id', recurrente.id)
+    }
+  }
+
+  // Parámetros de sesión — si hay customer en recurrente, guardamos el método de pago
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: 'payment',
+    line_items: [
+      {
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Factura ${factura.numero}`,
+            ...(factura.clientes?.nombre
+              ? { description: `Emitida a ${factura.clientes.nombre}` }
+              : {}),
+          },
+          unit_amount: Math.round(factura.total * 100),
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${origin}/pay/${token}/success`,
+    cancel_url:  `${origin}/pay/${token}`,
+    metadata: {
+      invoice_id:    factura.id,
+      payment_token: token,
+    },
+  }
+
+  if (stripeCustomerId) {
+    // Guardar el método de pago para uso futuro en suscripciones
+    sessionParams.customer = stripeCustomerId
+    sessionParams.payment_intent_data = { setup_future_usage: 'off_session' }
+  } else if (factura.clientes?.email) {
+    sessionParams.customer_email = factura.clientes.email
+  }
+
   // Crear la sesión EN la cuenta Express del autónomo — el dinero va directo a su banco
   const session = await stripe.checkout.sessions.create(
-    {
-      mode: 'payment',
-      // Sin payment_method_types → Stripe usa los métodos habilitados en el Dashboard
-      // (tarjeta, PayPal, SEPA...) según la configuración de la cuenta
-      line_items: [
-        {
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: `Factura ${factura.numero}`,
-              ...(factura.clientes?.nombre
-                ? { description: `Emitida a ${factura.clientes.nombre}` }
-                : {}),
-            },
-            unit_amount: Math.round(factura.total * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      ...(factura.clientes?.email ? { customer_email: factura.clientes.email } : {}),
-      success_url: `${origin}/pay/${token}/success`,
-      cancel_url: `${origin}/pay/${token}`,
-      metadata: {
-        invoice_id: factura.id,
-        payment_token: token,
-      },
-    },
-    // Ejecutar la sesión en la cuenta Express del autónomo
+    sessionParams,
     { stripeAccount: perfil.stripe_account_id }
   )
 

@@ -1,5 +1,5 @@
 import {
-  Body, Container, Head, Heading, Hr, Html, Preview, Section, Text,
+  Body, Container, Head, Heading, Hr, Html, Section, Text,
 } from '@react-email/components'
 
 interface Props {
@@ -20,8 +20,10 @@ export function InvoiceUncollectibleEmail({
   return (
     <Html lang="es">
       <Head />
-      <Preview>Factura {invoiceNumber} marcada como incobrable</Preview>
       <Body style={styles.body}>
+        <div style={{ display: 'none', overflow: 'hidden', maxHeight: 0, fontSize: '1px', color: '#f3f4f6' }}>
+          Factura {invoiceNumber} marcada como incobrable
+        </div>
         <Container style={styles.container}>
           <Section style={styles.header}>
             <Heading style={styles.headerTitle}>Factura incobrable</Heading>

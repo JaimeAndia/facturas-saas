@@ -1,5 +1,5 @@
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Section, Text,
+  Body, Button, Container, Head, Heading, Hr, Html, Section, Text,
 } from '@react-email/components'
 
 interface Props {
@@ -14,8 +14,10 @@ export function SubscriptionSetupEmail({ clientName, companyName, amount, interv
   return (
     <Html lang="es">
       <Head />
-      <Preview>{companyName} ha activado el cobro automático — confirma tus datos de pago</Preview>
       <Body style={styles.body}>
+        <div style={{ display: 'none', overflow: 'hidden', maxHeight: 0, fontSize: '1px', color: '#f3f4f6' }}>
+          {companyName} ha activado el cobro automático — confirma tus datos de pago
+        </div>
         <Container style={styles.container}>
           <Section style={styles.header}>
             <Heading style={styles.headerTitle}>Cobro automático activado</Heading>

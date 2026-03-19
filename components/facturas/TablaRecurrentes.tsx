@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useTransition, useCallback } from 'react'
+import { Fragment, useState, useTransition, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Toast, type TipoToast } from '@/components/ui/Toast'
@@ -107,54 +107,6 @@ function ResumenGeneradas({ facturas }: { facturas: FacturaGenerada[] }) {
   )
 }
 
-// Detalle expandido de facturas generadas para una recurrente
-function ListaGeneradas({ facturas }: { facturas: FacturaGenerada[] }) {
-  if (facturas.length === 0) {
-    return <p className="px-5 py-3 text-xs text-gray-400">Aún no se ha generado ningún ciclo.</p>
-  }
-  return (
-    <div className="border-t border-violet-100 bg-violet-50/30">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-violet-100">
-            <th className="px-5 py-2 text-left font-semibold text-gray-400">Nº Factura</th>
-            <th className="px-5 py-2 text-left font-semibold text-gray-400">Fecha</th>
-            <th className="px-5 py-2 text-right font-semibold text-gray-400">Importe</th>
-            <th className="px-5 py-2 text-center font-semibold text-gray-400">Estado</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-violet-100/60">
-          {facturas.map(f => (
-            <tr key={f.id}>
-              <td className="px-5 py-2 font-medium text-gray-700">
-                <Link href={`/facturas/${f.id}`} className="hover:text-violet-600 hover:underline">
-                  {f.numero}
-                </Link>
-              </td>
-              <td className="px-5 py-2 text-gray-500">{formatDate(f.fecha_emision)}</td>
-              <td className="px-5 py-2 text-right font-semibold text-gray-800">{formatCurrency(f.total)}</td>
-              <td className="px-5 py-2 text-center">
-                {f.estado === 'pagada' ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 font-medium text-green-700">
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Pagada
-                  </span>
-                ) : f.estado === 'vencida' ? (
-                  <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">Vencida</span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 font-medium text-orange-700">Pendiente</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
 // ── Componente principal ───────────────────────────────────────────────────────
 
 // ── Badge de cobro automático ──────────────────────────────────────────────────
@@ -199,15 +151,24 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
   const [toast, setToast] = useState<{ mensaje: string; tipo: TipoToast } | null>(null)
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   // ID de la recurrente cuyo panel de activación está abierto + URL de setup
   const [activandoId, setActivandoId] = useState<string | null>(null)
   const [setupUrl, setSetupUrl] = useState<string | null>(null)
   const [loadingActivar, setLoadingActivar] = useState<string | null>(null)
   const [loadingDesactivar, setLoadingDesactivar] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
+  const [portalModal, setPortalModal] = useState<{ recurrenteId: string; customerId: string; clienteNombre: string } | null>(null)
+  const [copiadoPortal, setCopiadoPortal] = useState(false)
 
   const mostrarToast = useCallback((m: string, t: TipoToast) => setToast({ mensaje: m, tipo: t }), [])
+
+  // Polling: si hay alguna recurrente en pending_setup, consultar cada 3s hasta que pase a active
+  const hayPendingSetup = recurrentes.some(r => r.cobro_status === 'pending_setup')
+  useEffect(() => {
+    if (!hayPendingSetup) return
+    const interval = setInterval(() => router.refresh(), 3000)
+    return () => clearInterval(interval)
+  }, [hayPendingSetup, router])
 
   // ── Gate de plan ──────────────────────────────────────────────────────────
 
@@ -290,6 +251,12 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
       const res = await fetch(`/api/stripe/recurrentes/${id}/activar-cobro`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { mostrarToast(data.error ?? 'Error al activar', 'error'); return }
+      if (data.activated) {
+        // Suscripción creada directamente — tarjeta ya guardada, sin popup
+        mostrarToast('¡Cobro automático activado!', 'exito')
+        router.refresh()
+        return
+      }
       setSetupUrl(data.setup_url)
       setActivandoId(id)
       router.refresh()
@@ -322,11 +289,16 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
     })
   }
 
-  function handleCopiarPortal(recurrenteId: string, stripeCustomerId: string) {
-    const appUrl = window.location.origin
-    const portalUrl = `${appUrl}/api/stripe/recurrentes/${recurrenteId}/portal-publico?cid=${stripeCustomerId}`
+  function handleCopiarPortal(recurrenteId: string, stripeCustomerId: string, clienteNombre: string) {
+    setPortalModal({ recurrenteId, customerId: stripeCustomerId, clienteNombre })
+  }
+
+  function handleCopiarUrlPortal() {
+    if (!portalModal) return
+    const portalUrl = `${window.location.origin}/api/stripe/recurrentes/${portalModal.recurrenteId}/portal-publico?cid=${portalModal.customerId}`
     navigator.clipboard.writeText(portalUrl).then(() => {
-      mostrarToast('Enlace de gestión copiado', 'exito')
+      setCopiadoPortal(true)
+      setTimeout(() => setCopiadoPortal(false), 2000)
     })
   }
 
@@ -337,13 +309,25 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
       {/* Cabecera + botón nueva */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-gray-500">Resumen</h2>
-        <Link href="/facturas/recurrentes/nueva"
-          className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nueva factura recurrente
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.refresh()}
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title="Actualizar"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <Link href="/facturas/recurrentes/nueva"
+            className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva factura recurrente
+          </Link>
+        </div>
       </div>
 
       {/* Métricas */}
@@ -442,13 +426,12 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
               </thead>
               <tbody>
                 {filtradas.map((r) => {
-                  const isExpanded = expandedId === r.id
                   const pendientes = (r.facturas_generadas ?? []).filter(f => f.estado === 'emitida' || f.estado === 'vencida').length
                   return (
                     <Fragment key={r.id}>
                       <tr
-                        className={`group cursor-pointer border-b border-gray-100 transition-colors ${isExpanded ? 'bg-violet-50/40' : 'hover:bg-gray-50'}`}
-                        onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                        className="group cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50"
+                        onClick={() => router.push(`/facturas/recurrentes/${r.id}`)}
                       >
                         <td className="px-5 py-3.5 text-sm text-gray-700">
                           <div className="flex items-center gap-1.5">
@@ -456,16 +439,6 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                               <span className="flex h-2 w-2 rounded-full bg-orange-400" title={`${pendientes} pendientes`} />
                             )}
                             {r.facturas.clientes?.nombre ?? '—'}
-                            <Link
-                              href={`/facturas/recurrentes/${r.id}`}
-                              title="Ver detalle"
-                              className="ml-0.5 text-gray-300 hover:text-violet-500"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </Link>
                           </div>
                         </td>
                         <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{r.facturas.numero}</td>
@@ -478,7 +451,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                           <ResumenGeneradas facturas={r.facturas_generadas} />
                         </td>
                         <td className="px-5 py-3.5">
-                          <div className="flex flex-wrap items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 whitespace-nowrap" onClick={e => e.stopPropagation()}>
                             {/* Badge de cobro automático si aplica */}
                             {r.cobro_automatico || r.cobro_status !== 'manual'
                               ? <CobroStatusBadge status={r.cobro_status} />
@@ -532,14 +505,15 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                             {r.cobro_status === 'active' && r.stripe_customer_id && (
                               <button
                                 type="button"
-                                onClick={() => handleCopiarPortal(r.id, r.stripe_customer_id!)}
+                                onClick={() => handleCopiarPortal(r.id, r.stripe_customer_id!, r.facturas.clientes?.nombre ?? '—')}
                                 title="Copiar enlace de gestión para el cliente"
-                                className="rounded-lg p-1.5 text-gray-400 hover:bg-violet-50 hover:text-violet-600"
+                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-gray-500 hover:bg-violet-50 hover:text-violet-600"
                               >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
+                                Portal cliente
                               </button>
                             )}
 
@@ -562,11 +536,11 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                             {/* Botón eliminar (solo si modo manual) */}
                             {r.cobro_status === 'manual' && (
                               confirmandoId === r.id ? (
-                                <div className="flex gap-1">
+                                <div className="flex items-center gap-1">
                                   <button onClick={() => handleEliminar(r.id)} disabled={isPending}
-                                    className="rounded-lg bg-red-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-red-700">Sí, eliminar</button>
+                                    className="rounded-lg bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700">Sí</button>
                                   <button onClick={() => setConfirmandoId(null)}
-                                    className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-600">No</button>
+                                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600">No</button>
                                 </div>
                               ) : (
                                 <button onClick={() => setConfirmandoId(r.id)} title="Eliminar"
@@ -581,13 +555,6 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                           </div>
                         </td>
                       </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={7} className="p-0">
-                            <ListaGeneradas facturas={r.facturas_generadas ?? []} />
-                          </td>
-                        </tr>
-                      )}
                     </Fragment>
                   )
                 })}
@@ -597,13 +564,12 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
             {/* ── Móvil ── */}
             <ul className="divide-y divide-gray-100 md:hidden">
               {filtradas.map((r) => {
-                const isExpanded = expandedId === r.id
                 const pendientes = r.facturas_generadas.filter(f => f.estado === 'emitida' || f.estado === 'vencida').length
                 return (
                   <li key={r.id}>
                     <div
-                      className={`px-5 py-4 ${isExpanded ? 'bg-violet-50/40' : ''}`}
-                      onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                      className="cursor-pointer px-5 py-4"
+                      onClick={() => router.push(`/facturas/recurrentes/${r.id}`)}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -613,13 +579,6 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                               {r.facturas.clientes?.nombre ?? '—'}
                             </p>
                           </div>
-                          <Link
-                            href={`/facturas/recurrentes/${r.id}`}
-                            className="text-xs text-violet-600 hover:underline"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            Ver detalle →
-                          </Link>
                           <p className="text-xs text-gray-400">{r.facturas.numero} · {etiquetaFrecuencia(r.frecuencia)}</p>
                         </div>
                         <div className="text-right shrink-0">
@@ -694,7 +653,6 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                         )}
                       </div>
                     </div>
-                    {isExpanded && <ListaGeneradas facturas={r.facturas_generadas} />}
                   </li>
                 )
               })}
@@ -752,6 +710,47 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
             <p className="mt-3 text-xs text-gray-400">
               Este enlace puede compartirse por email, WhatsApp o cualquier otro medio.
               Expira en 24 horas — si caduca, vuelve a hacer clic en &quot;Activar cobro automático&quot;.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal portal del cliente */}
+      {portalModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <p className="font-semibold text-gray-900">Portal de gestión del cliente</p>
+                <p className="mt-0.5 text-sm text-gray-500">
+                  Envía este enlace a <span className="font-medium text-gray-700">{portalModal.clienteNombre}</span> para
+                  que pueda ver su historial de pagos, actualizar su tarjeta o cancelar la suscripción.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPortalModal(null)}
+                className="ml-3 shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+              <p className="flex-1 truncate font-mono text-sm text-gray-500">
+                {window.location.origin}/api/stripe/recurrentes/…/portal-publico
+              </p>
+              <button
+                type="button"
+                onClick={handleCopiarUrlPortal}
+                className="shrink-0 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+              >
+                {copiadoPortal ? '✓ Copiado' : 'Copiar enlace'}
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-gray-400">
+              El enlace redirige directamente al portal de Stripe — no requiere que el cliente tenga cuenta en FacturX.
             </p>
           </div>
         </div>

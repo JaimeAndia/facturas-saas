@@ -1,5 +1,5 @@
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Section, Text,
+  Body, Button, Container, Head, Heading, Hr, Html, Section, Text,
 } from '@react-email/components'
 
 interface Props {
@@ -52,8 +52,10 @@ export function PaymentReminderEmail({
   return (
     <Html lang="es">
       <Head />
-      <Preview>{cfg.previewText(invoiceNumber)}</Preview>
       <Body style={styles.body}>
+        <div style={{ display: 'none', overflow: 'hidden', maxHeight: 0, fontSize: '1px', color: '#f3f4f6' }}>
+          {cfg.previewText(invoiceNumber)}
+        </div>
         <Container style={styles.container}>
           <Section style={{ ...styles.header, backgroundColor: cfg.headerBg }}>
             <Heading style={styles.headerTitle}>{cfg.headerTitle}</Heading>

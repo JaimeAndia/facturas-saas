@@ -105,26 +105,6 @@ export default async function PaginaExito({ params }: PageProps) {
             </a>
           )}
 
-          {/* Ir al dashboard */}
-          <Link
-            href="/facturas"
-            className="flex items-center gap-3 border-b border-gray-100 px-5 py-4 text-sm transition-colors hover:bg-gray-50"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Ir al dashboard</p>
-              <p className="text-xs text-gray-400">La factura ya aparece como pagada</p>
-            </div>
-            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-
           {/* Contacto */}
           {raw?.profiles?.email && (
             <a

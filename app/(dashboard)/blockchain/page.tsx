@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FacturaEventosCard, type BlockchainEvento } from './FacturaEventosCard'
+import { PendingPoller } from './PendingPoller'
 
 export const metadata: Metadata = {
   title: 'Registro blockchain — FacturX',
@@ -28,6 +29,7 @@ export default async function BlockchainPage({
     .order('created_at', { ascending: true }) as { data: BlockchainEvento[] | null }
 
   const eventos = rawEventos ?? []
+  const hayPendientes = eventos.some(e => e.tx_status === 'pending')
 
   // ── Agrupar eventos por factura ──────────────────────────────────────────────
   // Clave de agrupación: factura_id si existe, si no factura_numero
@@ -69,6 +71,7 @@ export default async function BlockchainPage({
 
   return (
     <div className="space-y-6">
+      <PendingPoller hayPendientes={hayPendientes} />
 
       {/* ── Cabecera ── */}
       <div>

@@ -7,7 +7,6 @@ import {
   Heading,
   Hr,
   Html,
-  Preview,
   Row,
   Section,
   Text,
@@ -68,8 +67,10 @@ export function FacturaEmail({
   return (
     <Html lang="es">
       <Head />
-      <Preview>Factura {numeroFactura} de {nombreEmisor} — {eur(total)}</Preview>
       <Body style={estilos.body}>
+        <div style={{ display: 'none', overflow: 'hidden', maxHeight: 0, fontSize: '1px', color: '#f3f4f6' }}>
+          Factura {numeroFactura} de {nombreEmisor} — {eur(total)}
+        </div>
         <Container style={estilos.container}>
 
           {/* Cabecera */}
