@@ -58,16 +58,39 @@ export async function GET(request: Request) {
 
   for (const fv of (facturasVencidas ?? [])) {
     try {
-      // Marcar la factura como vencida (sin desactivar la recurrente)
-      // La recurrente sigue activa y seguirá generando facturas en los próximos ciclos
+      // Verificar que la recurrente aún está activa
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rec } = await (supabase.from('facturas_recurrentes') as any)
+        .select('id, activo, user_id')
+        .eq('id', fv.factura_recurrente_id)
+        .single() as { data: { id: string; activo: boolean; user_id: string } | null }
+
+      if (!rec || !rec.activo) continue
+
+      // Desactivar la recurrente
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('facturas_recurrentes') as any)
+        .update({ activo: false })
+        .eq('id', rec.id)
+
+      // Cancelar la factura impagada
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from('facturas') as any)
-        .update({ estado: 'vencida' })
+        .update({ estado: 'cancelada' })
         .eq('id', fv.id)
 
-      console.log(`[Cron] Factura ${fv.id} marcada como vencida por impago`)
+      // Notificar al autónomo
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('notificaciones') as any).insert({
+        user_id: rec.user_id,
+        tipo: 'recurrente_autocancelada',
+        mensaje: 'Una factura recurrente se ha cancelado automáticamente por falta de pago pasado el plazo de 3 días.',
+        metadata: { recurrente_id: rec.id, factura_id: fv.id },
+      })
+
+      console.log(`[Cron] Recurrente ${rec.id} auto-cancelada por impago — factura ${fv.id} cancelada`)
     } catch (err) {
-      console.error(`[Cron] Error marcando factura ${fv.id} como vencida:`, err)
+      console.error(`[Cron] Error auto-cancelando recurrente ${fv.factura_recurrente_id}:`, err)
     }
   }
 
