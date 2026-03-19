@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: factura } = await (supabase as any)
     .from('facturas')
-    .select('id, numero, total, estado, user_id, clientes(nombre, email)')
+    .select('id, numero, total, estado, user_id, factura_recurrente_id, clientes(nombre, email)')
     .eq('payment_token', token)
     .single() as {
       data: {
@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         total: number
         estado: string
         user_id: string
+        factura_recurrente_id: string | null
         clientes: { nombre: string; email: string | null } | null
       } | null
     }
@@ -67,15 +68,29 @@ export async function POST(request: Request) {
   const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const stripe = getStripe()
 
-  // ── Verificar si esta factura es la base de una recurrente ─────────────────
-  // Si lo es, creamos/reutilizamos un Customer en la cuenta Express y guardamos
-  // el método de pago para poder activar cobros automáticos sin nuevo checkout.
+  // ── Verificar si esta factura está ligada a una recurrente ────────────────
+  // Dos casos:
+  //  A) factura es la plantilla base → facturas_recurrentes.factura_base_id = factura.id
+  //  B) factura es una hija generada → factura.factura_recurrente_id apunta a la recurrente
+  // En ambos casos creamos/reutilizamos un Customer en la cuenta Express para
+  // guardar el método de pago y poder activar cobros automáticos sin nuevo checkout.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recurrente } = await (supabase as any)
+  let { data: recurrente } = await (supabase as any)
     .from('facturas_recurrentes')
     .select('id, stripe_customer_id')
     .eq('factura_base_id', factura.id)
     .maybeSingle() as { data: { id: string; stripe_customer_id: string | null } | null }
+
+  // Caso B: factura hija generada por cron o webhook
+  if (!recurrente && factura.factura_recurrente_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: recurrenteHija } = await (supabase as any)
+      .from('facturas_recurrentes')
+      .select('id, stripe_customer_id')
+      .eq('id', factura.factura_recurrente_id)
+      .maybeSingle() as { data: { id: string; stripe_customer_id: string | null } | null }
+    recurrente = recurrenteHija
+  }
 
   let stripeCustomerId: string | undefined = undefined
 
