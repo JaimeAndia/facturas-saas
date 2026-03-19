@@ -20,10 +20,10 @@ export async function PATCH(_request: Request, { params }: RouteParams) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: factura } = await (supabase as any)
     .from('facturas')
-    .select('id, estado, user_id')
+    .select('id, estado, user_id, total')
     .eq('id', id)
     .eq('user_id', user.id)
-    .single() as { data: { id: string; estado: string; user_id: string } | null }
+    .single() as { data: { id: string; estado: string; user_id: string; total: number } | null }
 
   if (!factura) {
     return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 })
@@ -43,11 +43,13 @@ export async function PATCH(_request: Request, { params }: RouteParams) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase.from('payment_logs') as any).insert({
-    invoice_id: id,
-    event_type: 'manual_paid',
-    provider: 'manual',
-    status: 'succeeded',
-    raw_payload: { marked_by: user.id, marked_at: ahora },
+    invoice_id:             id,
+    event_type:             'manual_paid',
+    provider:               'manual',
+    amount:                 factura.total,
+    status:                 'succeeded',
+    xrpl_settlement_status: 'not_applicable',
+    raw_payload:            { marked_by: user.id, marked_at: ahora },
   })
 
   return NextResponse.json({ ok: true })
