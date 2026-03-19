@@ -30,7 +30,7 @@ export default async function DetalleRecurrentePage({ params }: Props) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('facturas') as any)
-      .select('id, numero, estado, fecha_emision, total, payment_link_url, factura_recurrente_id')
+      .select('id, numero, estado, fecha_emision, total, payment_link_url, payment_token, factura_recurrente_id')
       .eq('user_id', user.id)
       .eq('factura_recurrente_id', id)
       .order('fecha_emision', { ascending: false }),

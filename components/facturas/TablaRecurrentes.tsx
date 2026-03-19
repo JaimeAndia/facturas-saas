@@ -17,6 +17,7 @@ export interface FacturaGenerada {
   fecha_emision: string
   total: number
   payment_link_url: string | null
+  payment_token: string | null
   factura_recurrente_id: string
 }
 

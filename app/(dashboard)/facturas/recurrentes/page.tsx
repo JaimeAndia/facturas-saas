@@ -28,7 +28,7 @@ export default async function RecurrentesPage() {
     // Facturas generadas por el cron (tienen factura_recurrente_id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('facturas') as any)
-      .select('id, numero, estado, fecha_emision, total, blockchain_tx, payment_link_url, factura_recurrente_id')
+      .select('id, numero, estado, fecha_emision, total, blockchain_tx, payment_link_url, payment_token, factura_recurrente_id')
       .eq('user_id', user!.id)
       .not('factura_recurrente_id', 'is', null)
       .order('fecha_emision', { ascending: false }),
