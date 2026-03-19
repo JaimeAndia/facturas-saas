@@ -105,6 +105,7 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
   const [setupUrl, setSetupUrl] = useState<string | null>(recurrenteInicial.setup_url)
   const [mostrandoSetupPanel, setMostrandoSetupPanel] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [copiadoFacturaId, setCopiadoFacturaId] = useState<string | null>(null)
 
   const mostrarToast = useCallback((m: string, t: TipoToast) => setToast({ mensaje: m, tipo: t }), [])
 
@@ -193,6 +194,13 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
     navigator.clipboard.writeText(setupUrl).then(() => {
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2000)
+    })
+  }
+
+  function handleCopiarEnlaceFactura(facturaId: string, url: string) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiadoFacturaId(facturaId)
+      setTimeout(() => setCopiadoFacturaId(null), 2000)
     })
   }
 
@@ -489,19 +497,39 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       {f.payment_link_url && f.estado !== 'pagada' && f.estado !== 'cancelada' && (
-                        <a
-                          href={f.payment_link_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Abrir link de cobro"
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
-                          Cobrar
-                        </a>
+                        <div className="inline-flex items-center gap-1.5">
+                          <a
+                            href={f.payment_link_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Abrir link de cobro"
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Cobrar
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleCopiarEnlaceFactura(f.id, f.payment_link_url!)}
+                            title="Copiar enlace de pago"
+                            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50"
+                          >
+                            {copiadoFacturaId === f.id ? (
+                              <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                            {copiadoFacturaId === f.id ? 'Copiado' : 'Copiar'}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -536,14 +564,23 @@ export function DetalleRecurrente({ recurrente: recurrenteInicial, cobrosActivos
                       Ver detalle →
                     </Link>
                     {f.payment_link_url && f.estado !== 'pagada' && f.estado !== 'cancelada' && (
-                      <a
-                        href={f.payment_link_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-emerald-600 hover:underline"
-                      >
-                        Link de cobro →
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={f.payment_link_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-emerald-600 hover:underline"
+                        >
+                          Link de cobro →
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleCopiarEnlaceFactura(f.id, f.payment_link_url!)}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          {copiadoFacturaId === f.id ? '✓ Copiado' : 'Copiar'}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </li>
