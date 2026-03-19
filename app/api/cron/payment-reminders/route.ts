@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { render } from '@react-email/components'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getResend } from '@/lib/resend/client'
 import { PaymentReminderEmail } from '@/emails/payment-reminder'
 import { InvoiceUncollectibleEmail } from '@/emails/invoice-uncollectible'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { recordXrplEvent } from '@/lib/xrpl-events'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Días de cadencia entre recordatorios
 const DIAS_ENTRE_RECORDATORIOS: Record<number, number> = {
@@ -148,7 +146,7 @@ export async function GET(request: Request) {
               emisorEmail,
             })
           )
-          await resend.emails.send({
+          await getResend().emails.send({
             from: 'FacturX <no-reply@facturx.es>',
             to: emisorEmail,
             subject: `Factura ${factura.numero} marcada como incobrable`,
@@ -206,7 +204,7 @@ export async function GET(request: Request) {
         3: `Aviso final — Factura ${factura.numero} impagada`,
       }
 
-      await resend.emails.send({
+      await getResend().emails.send({
         from: 'FacturX <no-reply@facturx.es>',
         to: clienteEmail,
         subject: subjects[numeroRecordatorio],
