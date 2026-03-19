@@ -9,7 +9,6 @@ import { FacturaEmail } from '@/emails/FacturaEmail'
 import { formatDate } from '@/lib/utils'
 import { calcularProximaFecha } from '@/lib/utils'
 import { registrarEventoBlockchain } from '@/lib/blockchain-event'
-import { recordXrplEvent } from '@/lib/xrpl-events'
 import type { Factura, LineaFactura, Cliente } from '@/types'
 
 export const runtime = 'nodejs'
@@ -59,33 +58,16 @@ export async function GET(request: Request) {
 
   for (const fv of (facturasVencidas ?? [])) {
     try {
-      // Verificar que la recurrente aún está activa
+      // Marcar la factura como vencida (sin desactivar la recurrente)
+      // La recurrente sigue activa y seguirá generando facturas en los próximos ciclos
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rec } = await (supabase.from('facturas_recurrentes') as any)
-        .select('id, activo, user_id')
-        .eq('id', fv.factura_recurrente_id)
-        .single() as { data: { id: string; activo: boolean; user_id: string } | null }
+      await (supabase.from('facturas') as any)
+        .update({ estado: 'vencida' })
+        .eq('id', fv.id)
 
-      if (!rec || !rec.activo) continue
-
-      // Cancelar la recurrencia
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('facturas_recurrentes') as any)
-        .update({ activo: false })
-        .eq('id', rec.id)
-
-      // Notificar al autónomo
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('notificaciones') as any).insert({
-        user_id: rec.user_id,
-        tipo: 'recurrente_autocancelada',
-        mensaje: 'Una factura recurrente se ha cancelado automáticamente por falta de pago pasado el plazo de 3 días.',
-        metadata: { recurrente_id: rec.id, factura_id: fv.id },
-      })
-
-      console.log(`[Cron] Recurrente ${rec.id} auto-cancelada por impago`)
+      console.log(`[Cron] Factura ${fv.id} marcada como vencida por impago`)
     } catch (err) {
-      console.error(`[Cron] Error auto-cancelando recurrente ${fv.factura_recurrente_id}:`, err)
+      console.error(`[Cron] Error marcando factura ${fv.id} como vencida:`, err)
     }
   }
 
@@ -229,19 +211,6 @@ export async function GET(request: Request) {
         })
       }
 
-      // xrpl_events: invoice_created para todas las facturas generadas por el cron
-      recordXrplEvent({
-        userId:    recurrente.user_id,
-        eventType: 'invoice_created',
-        invoiceId: nuevaFactura.id,
-        payload: {
-          invoiceNumber: nuevaFactura.numero,
-          amount:        original.total,
-          currency:      'EUR',
-          isRecurring:   true,
-          recurrenteId:  recurrente.id,
-        },
-      }).catch(() => {})
 
       // 5. Actualizar proxima_fecha y ultima_generacion
       const nuevaProximaFecha = calcularProximaFecha(

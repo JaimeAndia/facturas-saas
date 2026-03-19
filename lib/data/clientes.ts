@@ -9,6 +9,7 @@ export async function getClientesCached(userId: string) {
     .from('clientes')
     .select('id, nombre, nif')
     .eq('user_id', userId)
+    .neq('nombre', 'Cobro directo')
     .order('nombre', { ascending: true })
   return data ?? []
 }
