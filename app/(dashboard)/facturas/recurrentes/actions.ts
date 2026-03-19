@@ -9,7 +9,6 @@ import { createClient } from '@/lib/supabase/server'
 import { getResend } from '@/lib/resend/client'
 import { calcularProximaFecha, formatDate } from '@/lib/utils'
 import { registrarEventoBlockchain } from '@/lib/blockchain-event'
-import { recordXrplEvent } from '@/lib/xrpl-events'
 import { FacturaPDF } from '@/components/facturas/FacturaPDF'
 import { FacturaEmail } from '@/emails/FacturaEmail'
 import type { LineaInput } from '@/app/(dashboard)/facturas/actions'
@@ -304,19 +303,6 @@ export async function crearFacturaRecurrente(
     })
   }
 
-  // xrpl_events: invoice_created para la primera factura de la recurrente
-  recordXrplEvent({
-    userId:    user.id,
-    eventType: 'invoice_created',
-    invoiceId: primeraFactura.id,
-    payload: {
-      invoiceNumber: primeraFactura.numero,
-      amount:        datos.total,
-      currency:      'EUR',
-      isRecurring:   true,
-      recurrenteId:  recurrente.id,
-    },
-  }).catch(() => {})
 
   revalidatePath('/facturas/recurrentes')
   redirect('/facturas/recurrentes')

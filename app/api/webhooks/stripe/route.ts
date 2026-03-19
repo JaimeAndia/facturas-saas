@@ -66,11 +66,13 @@ export async function POST(request: Request) {
       // ─── checkout.session.completed ───────────────────────────────────────
       // Cubre tres casos: (1) compra de plan FacturX, (2) pago de factura,
       // (3) generación de wallet XRPL tras upgrade a Pro.
+      // Los eventos de cuentas Express (cobros automáticos) van a /api/webhooks/stripe-connect.
       case 'checkout.session.completed': {
         const session = evento.data.object as Stripe.Checkout.Session
 
-        // 1) Compra/renovación del plan de FacturX (modo suscripción)
-        if (session.mode === 'subscription') {
+        // 1) Compra/renovación del plan de FacturX (modo suscripción, cuenta principal)
+        // Si viene de una cuenta Express en modo suscripción, lo ignora (lo gestiona stripe-connect)
+        if (session.mode === 'subscription' && !evento.account) {
           const customerId = session.customer as string
           const subscriptionId = session.subscription as string
           const userId = session.metadata?.supabase_user_id
@@ -98,8 +100,9 @@ export async function POST(request: Request) {
         }
 
         // 2) Pago de factura (modo pago único con invoice_id en metadata)
+        // Ignorar si viene de cuenta Express — esos eventos los gestiona stripe-connect/route.ts
         const invoiceId = session.metadata?.invoice_id
-        if (invoiceId && session.payment_status === 'paid') {
+        if (invoiceId && session.payment_status === 'paid' && !evento.account) {
           const paidAt = new Date().toISOString()
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,8 +111,10 @@ export async function POST(request: Request) {
             .update({ estado: 'pagada', paid_at: paidAt })
             .eq('id', invoiceId)
 
+          // Insertar payment_log con xrpl_settlement_status:'pending' y capturar ID
+          // para actualizarlo una vez se confirme (o falle) la tx XRPL
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('payment_logs') as any).insert({
+          const { data: logRow } = await (supabase.from('payment_logs') as any).insert({
             invoice_id: invoiceId,
             event_type: 'checkout.session.completed',
             provider: 'stripe',
@@ -117,7 +122,10 @@ export async function POST(request: Request) {
             amount: (session.amount_total ?? 0) / 100,
             status: 'succeeded',
             raw_payload: evento.data.object,
-          })
+            xrpl_settlement_status: 'pending',
+          }).select('id').single() as { data: { id: string } | null }
+
+          const logId = logRow?.id
 
           // Registrar en XRPL (fire-and-forget)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,13 +136,33 @@ export async function POST(request: Request) {
             .single() as { data: { user_id: string } | null }
 
           if (facturaRow?.user_id) {
-            registrarEventoBlockchain(invoiceId, facturaRow.user_id, 'pago').then(res => {
-              if (res) console.log(`[Blockchain] Factura ${invoiceId} registrada tras pago: ${res.txHash}`)
+            registrarEventoBlockchain(invoiceId, facturaRow.user_id, 'pago').then(async res => {
+              if (res) {
+                console.log(`[Blockchain] Factura ${invoiceId} registrada tras pago: ${res.txHash}`)
+                if (logId) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('payment_logs') as any)
+                    .update({
+                      xrpl_settlement_status: 'settled',
+                      xrpl_settlement_tx:     res.txHash,
+                      xrpl_settled_at:        new Date().toISOString(),
+                    })
+                    .eq('id', logId)
+                }
+              } else if (logId) {
+                // XRPL no disponible o sin acceso — no mostrar error al cliente
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('payment_logs') as any)
+                  .update({ xrpl_settlement_status: 'not_applicable' })
+                  .eq('id', logId)
+              }
             })
-            recordXrplEvent({
-              userId: facturaRow.user_id, eventType: 'invoice_paid', invoiceId,
-              payload: { paidAt: new Date().toISOString(), provider: 'stripe_checkout' },
-            }).catch(() => {})
+          } else if (logId) {
+            // Sin user_id no se puede hacer XRPL → marcar de inmediato
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from('payment_logs') as any)
+              .update({ xrpl_settlement_status: 'not_applicable' })
+              .eq('id', logId)
           }
         }
 
@@ -304,18 +332,6 @@ export async function POST(request: Request) {
         registrarEventoBlockchain(nuevaFactura.id, suscripcion.user_id, 'pago').then(res => {
           if (res) console.log(`[Blockchain] Factura suscripción ${nuevaFactura.id} registrada en XRPL: ${res.txHash}`)
         })
-        recordXrplEvent({
-          userId:         suscripcion.user_id,
-          eventType:      'subscription_payment',
-          invoiceId:      nuevaFactura.id,
-          subscriptionId: suscripcion.id,
-          payload: {
-            planName:     suscripcion.plan_name,
-            amount:       amount,
-            interval:     suscripcion.interval,
-            billingCycle: new Date().toISOString().slice(0, 7),
-          },
-        }).catch(() => {})
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('payment_logs') as any).insert({
@@ -377,10 +393,6 @@ export async function POST(request: Request) {
         registrarEventoBlockchain(factura.id, factura.user_id, 'pago').then(res => {
           if (res) console.log(`[Blockchain] Factura ${factura.id} registrada tras payment_intent: ${res.txHash}`)
         })
-        recordXrplEvent({
-          userId: factura.user_id, eventType: 'invoice_paid', invoiceId: factura.id,
-          payload: { paidAt: new Date().toISOString(), provider: 'stripe_payment_intent' },
-        }).catch(() => {})
         break
       }
 

@@ -33,8 +33,11 @@ export async function registrarEventoBlockchain(
   userId: string,
   eventType: BlockchainEventType,
 ): Promise<{ txHash: string; ledger: number } | null> {
+  // Hoisted para poder marcar 'failed' desde el catch externo
+  const supabase = await createAdminClient()
+  let eventoId: string | undefined = undefined
+
   try {
-    const supabase = await createAdminClient()
 
     // 1. Verificar acceso XRPL: plan pro o xrpl_addon, y wallet generada
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,6 +131,9 @@ export async function registrarEventoBlockchain(
       })
       .select('id')
       .single() as { data: { id: string } | null }
+
+    // Hoistear el ID para poder marcarlo 'failed' en el catch externo
+    eventoId = eventoRow?.id
 
     // 4. Calcular hash canónico de la factura
     const proofData: InvoiceProofData = {
@@ -247,6 +253,14 @@ export async function registrarEventoBlockchain(
 
   } catch (err) {
     console.error('[BlockchainEvent] registrarEventoBlockchain falló silenciosamente:', err)
+    // Marcar el evento como fallido para que el dashboard no muestre 'Registrando…' para siempre
+    if (eventoId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('blockchain_events')
+        .update({ tx_status: 'failed' })
+        .eq('id', eventoId)
+    }
     return null
   }
 }

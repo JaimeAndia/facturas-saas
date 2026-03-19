@@ -9,7 +9,7 @@ interface SettlementData {
   explorerUrl: string | null
 }
 
-const MAX_INTENTOS = 8
+const MAX_INTENTOS = 20  // 20 × 2s = 40s — suficiente para que XRPL confirme
 
 export function XrplSettlementBadge({ token }: { token: string }) {
   const [data, setData] = useState<SettlementData | null>(null)

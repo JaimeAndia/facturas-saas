@@ -61,8 +61,10 @@ const FACTURA_TX_COLUMN: Partial<Record<XrplEventType, string>> = {
 export async function recordXrplEvent(
   params: XrplEventParams
 ): Promise<string | null> {
+  const supabase = await createAdminClient()
+  let eventoId: string | undefined = undefined
+
   try {
-    const supabase = await createAdminClient()
 
     // ── 1. Verificar acceso XRPL y obtener datos de wallet ────────────────────
     const { data: perfil } = await (supabase as any)
@@ -102,7 +104,7 @@ export async function recordXrplEvent(
       return null
     }
 
-    const eventoId = eventoRow.id
+    eventoId = eventoRow.id
 
     // ── 3. Determinar wallet firmante y destino ───────────────────────────────
     let signingWallet: Wallet
@@ -203,6 +205,14 @@ export async function recordXrplEvent(
   } catch (err) {
     // Nunca propagar — el flujo principal no debe bloquearse
     console.error('[XrplEvent] recordXrplEvent falló silenciosamente:', err)
+    // Marcar el evento como fallido para que no quede en 'pending' para siempre
+    if (eventoId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('xrpl_events')
+        .update({ xrpl_status: 'failed', error_message: String(err) })
+        .eq('id', eventoId)
+    }
     return null
   }
 }

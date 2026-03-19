@@ -1,8 +1,13 @@
 'use server'
 
+import { createElement } from 'react'
 import { revalidatePath } from 'next/cache'
+import { renderToBuffer } from '@react-pdf/renderer'
+import { render } from '@react-email/components'
 import { createClient } from '@/lib/supabase/server'
 import { getResend } from '@/lib/resend/client'
+import { FacturaPDF } from '@/components/facturas/FacturaPDF'
+import { FacturaEmail } from '@/emails/FacturaEmail'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { registrarEventoBlockchain, type BlockchainEventType } from '@/lib/blockchain-event'
 import { recordXrplEvent } from '@/lib/xrpl-events'
@@ -108,19 +113,6 @@ export async function crearFactura(
 
   revalidatePath('/facturas')
 
-  // Registrar en XRPL: invoice_created + emision si ya es emitida (fire-and-forget)
-  recordXrplEvent({
-    userId:    user.id,
-    eventType: 'invoice_created',
-    invoiceId: factura.id,
-    payload: {
-      invoiceNumber: factura.numero,
-      amount:        datos.total,
-      currency:      'EUR',
-      estado:        datos.estado,
-    },
-  }).catch(() => {})
-
   if (datos.estado === 'emitida') {
     registrarEventoBlockchain(factura.id, user.id, 'emision').catch(err => {
       console.error('[BlockchainEvent] Error en crearFactura (emision):', err)
@@ -159,14 +151,6 @@ export async function actualizarEstadoFactura(
     registrarEventoBlockchain(id, user.id, tipoEvento).catch(err => {
       console.error('[BlockchainEvent] Error fire-and-forget en actualizarEstadoFactura:', err)
     })
-  }
-
-  // XRPL: invoice_cancelled cuando se cancela manualmente
-  if (estado === 'cancelada') {
-    recordXrplEvent({
-      userId: user.id, eventType: 'invoice_cancelled', invoiceId: id,
-      payload: { reason: 'manual', cancelledAt: new Date().toISOString() },
-    }).catch(() => {})
   }
 
   return { ok: true }
@@ -257,13 +241,13 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
   const [{ data: rawFactura }, { data: rawPerfil }] = await Promise.all([
     supabase
       .from('facturas')
-      .select('*, clientes(*)')
+      .select('*, clientes(*), lineas_factura(*)')
       .eq('id', id)
       .eq('user_id', user.id)
       .single(),
     supabase
       .from('profiles')
-      .select('nombre, apellidos, email, nif')
+      .select('nombre, apellidos, email, nif, telefono, direccion, ciudad, codigo_postal, provincia, logo_url, iban')
       .eq('id', user.id)
       .single(),
   ])
@@ -279,45 +263,64 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
   }
 
   try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     const emisor = [perfil?.nombre, perfil?.apellidos].filter(Boolean).join(' ') || 'Tu proveedor'
+    const urlDescarga = factura.payment_token
+      ? `${appUrl}/api/pay/${factura.payment_token}/pdf`
+      : `${appUrl}/api/facturas/${id}/pdf`
+    const urlPago = factura.payment_token ? (factura.payment_link_url ?? null) : null
 
+    // ── Generar PDF ──────────────────────────────────────────────────────────
+    const pdfBuffer = await renderToBuffer(
+      createElement(FacturaPDF, { factura, perfil })
+    )
+
+    // ── Generar HTML del email ───────────────────────────────────────────────
+    const lineas = (factura.lineas_factura ?? []).sort(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0)
+    )
+
+    const html = await render(
+      createElement(FacturaEmail, {
+        numeroFactura:    factura.numero,
+        nombreEmisor:     emisor,
+        nombreCliente:    factura.clientes.nombre,
+        fechaEmision:     formatDate(factura.fecha_emision),
+        fechaVencimiento: factura.fecha_vencimiento ? formatDate(factura.fecha_vencimiento) : null,
+        lineas,
+        baseImponible:    factura.base_imponible,
+        ivaPorcentaje:    factura.iva_porcentaje,
+        ivaImporte:       factura.iva_importe,
+        irpfPorcentaje:   factura.irpf_porcentaje ?? 0,
+        irpfImporte:      factura.irpf_importe ?? 0,
+        total:            factura.total,
+        notas:            factura.notas ?? null,
+        urlDescarga,
+        urlPago,
+      })
+    )
+
+    // ── Enviar email con PDF adjunto ─────────────────────────────────────────
     await getResend().emails.send({
-      from: process.env.RESEND_FROM ?? `${emisor} <onboarding@resend.dev>`,
-      to: factura.clientes.email,
+      from:    process.env.RESEND_FROM ?? `${emisor} <onboarding@resend.dev>`,
+      to:      factura.clientes.email,
       subject: `Factura ${factura.numero} — ${formatCurrency(factura.total)}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #1e3a5f;">Factura ${factura.numero}</h2>
-          <p>Estimado/a <strong>${factura.clientes.nombre}</strong>,</p>
-          <p>Te remitimos la factura correspondiente:</p>
-          <table style="width:100%; border-collapse:collapse; margin: 16px 0;">
-            <tr style="background:#f3f4f6;">
-              <td style="padding:8px; font-weight:bold;">Número</td>
-              <td style="padding:8px;">${factura.numero}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px; font-weight:bold;">Fecha</td>
-              <td style="padding:8px;">${formatDate(factura.fecha_emision)}</td>
-            </tr>
-            ${factura.fecha_vencimiento ? `
-            <tr style="background:#f3f4f6;">
-              <td style="padding:8px; font-weight:bold;">Vencimiento</td>
-              <td style="padding:8px;">${formatDate(factura.fecha_vencimiento)}</td>
-            </tr>` : ''}
-            <tr style="background:#dbeafe;">
-              <td style="padding:8px; font-weight:bold;">Total</td>
-              <td style="padding:8px; font-weight:bold; font-size:18px;">${formatCurrency(factura.total)}</td>
-            </tr>
-          </table>
-          <p style="color:#6b7280; font-size:14px;">Un saludo,<br><strong>${emisor}</strong></p>
-        </div>
-      `,
+      html,
+      attachments: [
+        {
+          filename: `Factura-${factura.numero}.pdf`,
+          content:  pdfBuffer,
+        },
+      ],
     })
 
-    // Pasar a "emitida" si estaba en borrador
-    if (factura.estado === 'borrador') {
-      await actualizarEstadoFactura(id, 'emitida')
-    }
+    // ── Actualizar estado y fecha de envío ───────────────────────────────────
+    const updates: Record<string, unknown> = { fecha_envio: new Date().toISOString() }
+    if (factura.estado === 'borrador') updates.estado = 'emitida'
+    await supabase.from('facturas').update(updates).eq('id', id).eq('user_id', user.id)
+
+    revalidatePath(`/facturas/${id}`)
 
     // XRPL: invoice_sent (fire-and-forget)
     recordXrplEvent({
