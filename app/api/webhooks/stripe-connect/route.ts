@@ -253,14 +253,14 @@ export async function POST(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: primeraGenerada } = await (supabase as any)
           .from('facturas')
-          .select('id, numero')
+          .select('id, numero, payment_token')
           .eq('factura_recurrente_id', recurrente.id)
           .not('estado', 'in', '(pagada,cancelada)')
           .order('fecha_emision', { ascending: true })
           .limit(1)
-          .maybeSingle() as { data: { id: string; numero: string } | null }
+          .maybeSingle() as { data: { id: string; numero: string; payment_token: string | null } | null }
 
-        let nuevaFactura: { id: string; numero: string }
+        let nuevaFactura: { id: string; numero: string; payment_token: string | null }
 
         if (primeraGenerada) {
           // Primer cobro: marcar la factura pendiente existente como pagada
@@ -343,8 +343,8 @@ export async function POST(request: Request) {
               factura_recurrente_id: recurrente.id,
               stripe_invoice_id:     inv.id,
             })
-            .select('id, numero')
-            .single() as { data: { id: string; numero: string } | null; error: unknown }
+            .select('id, numero, payment_token')
+            .single() as { data: { id: string; numero: string; payment_token: string | null } | null; error: unknown }
 
           if (errFactura || !facturaCreada) {
             console.error('[Connect] Error creando factura:', errFactura)
@@ -443,7 +443,9 @@ export async function POST(request: Request) {
                 irpfImporte:     original.irpf_importe,
                 total:           original.total,
                 notas:           original.notas,
-                urlDescarga:     `${appUrl}/api/facturas/${nuevaFactura.id}/pdf`,
+                urlDescarga:     nuevaFactura.payment_token
+                  ? `${appUrl}/api/pay/${nuevaFactura.payment_token}/pdf`
+                  : undefined,
                 urlGestionSuscripcion,
               })
             )
