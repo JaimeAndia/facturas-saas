@@ -119,7 +119,7 @@ async function _enviarTxXrpl(
     meta.TransactionResult !== 'tesSUCCESS'
   ) {
     throw new Error(
-      `XRPL tx no exitosa: ${(meta as Record<string, unknown>)?.TransactionResult ?? 'unknown'}`
+      `XRPL tx no exitosa: ${(meta as unknown as Record<string, unknown>)?.TransactionResult ?? 'unknown'}`
     )
   }
 

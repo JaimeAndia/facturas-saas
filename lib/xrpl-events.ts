@@ -166,7 +166,7 @@ export async function recordXrplEvent(
       meta.TransactionResult === 'tesSUCCESS'
 
     if (!success) {
-      const txResult = (meta as Record<string, unknown>)?.TransactionResult ?? 'desconocido'
+      const txResult = (meta as unknown as Record<string, unknown>)?.TransactionResult ?? 'desconocido'
       console.warn(`[XrplEvent] Tx fallida (${params.eventType}): ${String(txResult)}`)
       await (supabase as any)
         .from('xrpl_events')

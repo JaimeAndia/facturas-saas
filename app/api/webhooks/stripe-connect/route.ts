@@ -450,6 +450,7 @@ export async function POST(request: Request) {
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const pdfBuffer = await (renderToBuffer as any)(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               createElement(FacturaPDF, {
                 factura: {
                   ...(original as object),
@@ -463,7 +464,7 @@ export async function POST(request: Request) {
                     ...l,
                   })),
                   cliente,
-                },
+                } as any,
                 perfil,
               })
             ) as Buffer
@@ -488,9 +489,9 @@ export async function POST(request: Request) {
                 irpfImporte:     original.irpf_importe,
                 total:           original.total,
                 notas:           original.notas,
-                urlDescarga:     nuevaFactura.payment_token
+                urlDescarga:     (nuevaFactura.payment_token
                   ? `${appUrl}/api/pay/${nuevaFactura.payment_token}/pdf`
-                  : undefined,
+                  : undefined) as string,
                 urlGestionSuscripcion,
               })
             )

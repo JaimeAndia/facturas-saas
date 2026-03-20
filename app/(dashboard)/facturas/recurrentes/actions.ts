@@ -240,7 +240,8 @@ export async function crearFacturaRecurrente(
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfBuffer = await (renderToBuffer as any)(
-      createElement(FacturaPDF, { factura: facturaParaPDF, perfil })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createElement(FacturaPDF, { factura: facturaParaPDF as any, perfil })
     ) as Buffer
 
     const html = await render(

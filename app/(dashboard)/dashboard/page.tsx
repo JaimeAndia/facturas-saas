@@ -232,7 +232,7 @@ export default async function DashboardPage() {
                 {notificaciones.map(n => (
                   <li key={n.id} className="text-sm text-amber-800">
                     • {n.mensaje}
-                    {n.metadata?.recurrente_id && (
+                    {!!(n.metadata as Record<string, unknown>)?.recurrente_id && (
                       <a
                         href="/facturas/recurrentes"
                         className="ml-1 text-xs font-semibold underline"

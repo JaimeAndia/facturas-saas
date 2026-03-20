@@ -418,7 +418,8 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
 
     // ── Generar PDF ──────────────────────────────────────────────────────────
     const pdfBuffer = await renderToBuffer(
-      createElement(FacturaPDF, { factura, perfil })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createElement(FacturaPDF, { factura, perfil }) as any
     )
 
     // ── Generar HTML del email ───────────────────────────────────────────────
@@ -464,7 +465,8 @@ export async function enviarFacturaPorEmail(id: string): Promise<ResultadoAccion
     // ── Actualizar estado y fecha de envío ───────────────────────────────────
     const updates: Record<string, unknown> = { fecha_envio: new Date().toISOString() }
     if (factura.estado === 'borrador') updates.estado = 'emitida'
-    await supabase.from('facturas').update(updates).eq('id', id).eq('user_id', user.id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('facturas') as any).update(updates).eq('id', id).eq('user_id', user.id)
 
     revalidatePath(`/facturas/${id}`)
 
