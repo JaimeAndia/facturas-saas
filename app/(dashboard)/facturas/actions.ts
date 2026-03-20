@@ -14,7 +14,7 @@ import { recordXrplEvent } from '@/lib/xrpl-events'
 
 export type ResultadoAccion<T = void> =
   | { ok: true; datos?: T }
-  | { ok: false; error: string }
+  | { ok: false; error: string; redirect?: string }
 
 export interface LineaInput {
   descripcion: string
@@ -40,6 +40,24 @@ export interface FacturaInput {
   lineas: LineaInput[]
 }
 
+// Helper: verifica que el autónomo tiene NIF antes de emitir
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function verificarNifEmision(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('nif')
+    .eq('id', userId)
+    .single() as { data: { nif: string | null } | null }
+  if (!data?.nif?.trim()) {
+    return {
+      ok: false as const,
+      error: 'Debes completar tu NIF en Configuración antes de emitir facturas',
+      redirect: '/configuracion/editar',
+    }
+  }
+  return null
+}
+
 // Helper: obtiene usuario y cliente supabase
 async function obtenerUsuario() {
   const supabase = await createClient()
@@ -52,6 +70,12 @@ export async function crearFactura(
 ): Promise<ResultadoAccion<{ id: string; numero: string }>> {
   const { supabase, user } = await obtenerUsuario()
   if (!user) return { ok: false, error: 'No autenticado' }
+
+  // Verificar NIF antes de emitir
+  if (datos.estado === 'emitida') {
+    const errorNif = await verificarNifEmision(supabase, user.id)
+    if (errorNif) return errorNif
+  }
 
   // Usar número manual si se proporcionó, si no generar automáticamente
   let numero: string
@@ -128,6 +152,12 @@ export async function actualizarEstadoFactura(
 ): Promise<ResultadoAccion> {
   const { supabase, user } = await obtenerUsuario()
   if (!user) return { ok: false, error: 'No autenticado' }
+
+  // Verificar NIF antes de emitir
+  if (estado === 'emitida') {
+    const errorNif = await verificarNifEmision(supabase, user.id)
+    if (errorNif) return errorNif
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('facturas') as any)
@@ -222,6 +252,104 @@ export async function duplicarFactura(
 
   revalidatePath('/facturas')
   return { ok: true, datos: { id: nueva.id } }
+}
+
+export async function crearFacturaRectificativa(
+  facturaOriginalId: string
+): Promise<ResultadoAccion<{ id: string; numero: string }>> {
+  const { supabase, user } = await obtenerUsuario()
+  if (!user) return { ok: false, error: 'No autenticado' }
+
+  // Cargar factura original con sus líneas
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawOriginal } = await (supabase.from('facturas') as any)
+    .select('*, lineas_factura(*)')
+    .eq('id', facturaOriginalId)
+    .eq('user_id', user.id)
+    .single() as { data: Record<string, unknown> & { lineas_factura: Record<string, unknown>[] } | null }
+
+  if (!rawOriginal) return { ok: false, error: 'Factura no encontrada' }
+
+  const estadosPermitidos = ['emitida', 'pagada']
+  if (!estadosPermitidos.includes(rawOriginal.estado as string)) {
+    return { ok: false, error: 'Solo se pueden rectificar facturas emitidas o pagadas' }
+  }
+
+  // Generar número ABO-YYYY-XXXX
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: numeroAbono, error: errNumero } = await (supabase.rpc as any)(
+    'fn_generar_numero_abono', { p_user_id: user.id }
+  ) as { data: string | null; error: unknown }
+
+  if (errNumero || !numeroAbono) {
+    return { ok: false, error: 'Error generando número de abono' }
+  }
+
+  const hoy = new Date().toISOString().split('T')[0]
+
+  // Crear la factura rectificativa con importes negados
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rectificativa, error: errFactura } = await (supabase.from('facturas') as any)
+    .insert({
+      user_id:                user.id,
+      cliente_id:             rawOriginal.cliente_id,
+      numero:                 numeroAbono,
+      fecha_emision:          hoy,
+      fecha_vencimiento:      null,
+      estado:                 'emitida',
+      tipo:                   'rectificativa',
+      factura_rectificada_id: facturaOriginalId,
+      base_imponible:         -(rawOriginal.base_imponible as number),
+      iva_porcentaje:         rawOriginal.iva_porcentaje,
+      iva_importe:            -(rawOriginal.iva_importe as number),
+      irpf_porcentaje:        rawOriginal.irpf_porcentaje,
+      irpf_importe:           -(rawOriginal.irpf_importe as number),
+      total:                  -(rawOriginal.total as number),
+      notas:                  `Abono de la factura ${rawOriginal.numero as string}`,
+    })
+    .select('id, numero')
+    .single() as { data: { id: string; numero: string } | null; error: { message: string } | null }
+
+  if (errFactura || !rectificativa) {
+    return { ok: false, error: errFactura?.message ?? 'Error creando la factura rectificativa' }
+  }
+
+  // Copiar líneas con cantidades negadas
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lineas = (rawOriginal.lineas_factura as any[]).map((l) => ({
+    factura_id:      rectificativa.id,
+    descripcion:     l.descripcion,
+    cantidad:        -(l.cantidad as number),
+    precio_unitario: l.precio_unitario,
+    subtotal:        -(l.subtotal as number),
+    orden:           l.orden,
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: errLineas } = await (supabase.from('lineas_factura') as any).insert(lineas)
+
+  if (errLineas) {
+    // Revertir la factura rectificativa si las líneas fallan
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('facturas') as any).delete().eq('id', rectificativa.id)
+    return { ok: false, error: 'Error copiando las líneas del abono' }
+  }
+
+  // Cancelar la factura original
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('facturas') as any)
+    .update({ estado: 'cancelada' })
+    .eq('id', facturaOriginalId)
+    .eq('user_id', user.id)
+
+  revalidatePath('/facturas')
+  revalidatePath(`/facturas/${facturaOriginalId}`)
+
+  registrarEventoBlockchain(rectificativa.id, user.id, 'emision').catch(err => {
+    console.error('[BlockchainEvent] Error en crearFacturaRectificativa:', err)
+  })
+
+  return { ok: true, datos: { id: rectificativa.id, numero: rectificativa.numero } }
 }
 
 export async function eliminarFactura(id: string): Promise<ResultadoAccion> {

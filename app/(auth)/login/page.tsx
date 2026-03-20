@@ -35,9 +35,9 @@ export default async function LoginPage({ searchParams }: PageProps) {
   const next = params.next ?? '/dashboard'
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-      <h1 className="mb-1 text-xl font-bold text-gray-900">Iniciar sesión</h1>
-      <p className="mb-6 text-sm text-gray-500">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-sm">
+      <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-gray-100">Iniciar sesión</h1>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         ¿No tienes cuenta?{' '}
         <Link href="/register" className="font-medium text-blue-600 hover:underline">
           Regístrate gratis
@@ -45,7 +45,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       </p>
 
       {errorMensaje && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600">
           {decodeURIComponent(errorMensaje)}
         </div>
       )}
@@ -53,7 +53,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <form action={loginAction} className="space-y-4">
         <input type="hidden" name="next" value={next} />
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Email
           </label>
           <input
@@ -69,7 +69,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Contraseña
             </label>
             <Link href="/reset-password" className="text-xs text-blue-600 hover:underline">

@@ -30,7 +30,7 @@ export default async function ClientesPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Clientes</h1>
       <TablaClientes clientes={clientes} avisoInicial={aviso ? (mensajes[aviso] ?? null) : null} />
     </div>
   )

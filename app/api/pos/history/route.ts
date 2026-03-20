@@ -15,7 +15,11 @@ export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('facturas')
-    .select('id, numero, total, estado, paid_at, created_at, notas, clientes(nombre)')
+    .select(`
+      id, numero, total, estado, paid_at, created_at, notas, payment_token,
+      clientes(nombre),
+      lineas_factura(descripcion, cantidad, precio_unitario, orden)
+    `)
     .eq('user_id', user.id)
     .eq('source', 'pos')
     .gte('created_at', `${hoy}T00:00:00`)
@@ -28,7 +32,14 @@ export async function GET() {
         paid_at: string | null
         created_at: string
         notas: string | null
+        payment_token: string | null
         clientes: { nombre: string } | null
+        lineas_factura: Array<{
+          descripcion: string
+          cantidad: number
+          precio_unitario: number
+          orden: number
+        }> | null
       }> | null
     }
 

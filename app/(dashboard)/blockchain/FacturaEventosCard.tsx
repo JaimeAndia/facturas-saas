@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CopiarTxClient } from './CopiarTxClient'
 
@@ -19,6 +20,8 @@ export interface BlockchainEvento {
   factura_total: number | null
   cliente_nombre: string | null
   factura_id: string | null
+  attempts: number | null
+  error_message: string | null
 }
 
 export interface FacturaEventosCardProps {
@@ -147,7 +150,24 @@ export function FacturaEventosCard({
   defaultOpen = false,
   isTestnet = true,
 }: FacturaEventosCardProps) {
+  const router = useRouter()
   const [abierto, setAbierto] = useState(defaultOpen)
+  const [reintentandoId, setReintentandoId] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
+
+  async function handleReintentar(eventoId: string) {
+    setReintentandoId(eventoId)
+    try {
+      await fetch('/api/blockchain/retry-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventoId }),
+      })
+    } finally {
+      setReintentandoId(null)
+      startTransition(() => { router.refresh() })
+    }
+  }
 
   const explorerBase = isTestnet
     ? 'https://testnet.xrpl.org/transactions'
@@ -157,13 +177,13 @@ export function FacturaEventosCard({
   const ultimoEvento = eventos[eventos.length - 1]
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-700 dark:bg-gray-800">
 
       {/* ── Cabecera desplegable ── */}
       <button
         type="button"
         onClick={() => setAbierto(v => !v)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-gray-50 transition-colors dark:hover:bg-gray-700"
       >
         {/* Icono del último evento */}
         {ultimoEvento && (
@@ -185,12 +205,12 @@ export function FacturaEventosCard({
                   {facturaNumero}
                 </Link>
               ) : (
-                <span className="text-sm font-semibold text-gray-700">{facturaNumero}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{facturaNumero}</span>
               )
             )}
             {/* Cliente */}
             {clienteNombre && (
-              <span className="text-sm text-gray-500">{clienteNombre}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{clienteNombre}</span>
             )}
             {/* Badge del último evento */}
             {ultimoEvento && (
@@ -202,11 +222,11 @@ export function FacturaEventosCard({
 
           <div className="mt-0.5 flex items-center gap-2">
             {/* Importe */}
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {formatImporte(facturaTotal)}
             </span>
             {/* Contador de eventos */}
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
               · {eventos.length} evento{eventos.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -214,7 +234,7 @@ export function FacturaEventosCard({
 
         {/* Chevron */}
         <svg
-          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -223,7 +243,7 @@ export function FacturaEventosCard({
 
       {/* ── Timeline de eventos (desplegable) ── */}
       {abierto && (
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-700">
           <ol className="relative">
             {eventos.map((evento, idx) => {
               const config = TIPO_CONFIG[evento.event_type]
@@ -242,24 +262,24 @@ export function FacturaEventosCard({
                   </span>
 
                   {/* Contenido con borde izquierdo del color del tipo */}
-                  <div className={`rounded-r-lg border-l-2 bg-gray-50 px-3 py-2 ${config.border}`}>
+                  <div className={`rounded-r-lg border-l-2 bg-gray-50 px-3 py-2 dark:bg-gray-900 ${config.border}`}>
                     <div className="flex flex-wrap items-center gap-2">
                       {/* Badge tipo */}
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${config.bgBadge} ${config.textBadge}`}>
                         {config.label}
                       </span>
                       {/* Fecha */}
-                      <span className="text-xs text-gray-400">{formatFechaHora(evento.created_at)}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{formatFechaHora(evento.created_at)}</span>
                     </div>
 
                     {/* TX hash + ledger */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
                       {evento.ledger && (
-                        <span className="text-xs text-gray-400">Ledger #{evento.ledger.toLocaleString('es-ES')}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Ledger #{evento.ledger.toLocaleString('es-ES')}</span>
                       )}
                       {evento.tx_hash ? (
-                        <div className="flex items-center gap-1.5 rounded-md bg-white px-2 py-1 ring-1 ring-gray-200">
-                          <span className="font-mono text-xs text-gray-600">
+                        <div className="flex items-center gap-1.5 rounded-md bg-white px-2 py-1 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                          <span className="font-mono text-xs text-gray-600 dark:text-gray-400">
                             {evento.tx_hash.slice(0, 6)}...{evento.tx_hash.slice(-6)}
                           </span>
                           <CopiarTxClient txHash={evento.tx_hash} />
@@ -268,7 +288,7 @@ export function FacturaEventosCard({
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Ver en XRPL Explorer"
-                            className="text-gray-400 transition-colors hover:text-blue-600"
+                            className="text-gray-400 transition-colors hover:text-blue-600 dark:text-gray-500"
                           >
                             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -276,13 +296,39 @@ export function FacturaEventosCard({
                             </svg>
                           </a>
                         </div>
+                      ) : evento.tx_status === 'failed' ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-500">
+                            Error en blockchain
+                            {(evento.attempts ?? 0) > 0 && ` · ${evento.attempts} intento${evento.attempts !== 1 ? 's' : ''}`}
+                          </span>
+                          {evento.error_message && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500" title={evento.error_message}>
+                              {evento.error_message.slice(0, 60)}{evento.error_message.length > 60 ? '…' : ''}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleReintentar(evento.id)}
+                            disabled={reintentandoId === evento.id}
+                            className="flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-gray-700"
+                          >
+                            {reintentandoId === evento.id ? (
+                              <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            )}
+                            {reintentandoId === evento.id ? 'Reintentando…' : 'Reintentar'}
+                          </button>
+                        </div>
                       ) : (
-                        <span className={`rounded-md px-2 py-1 text-xs font-medium ${
-                          evento.tx_status === 'failed'
-                            ? 'bg-red-50 text-red-500'
-                            : 'bg-amber-50 text-amber-600'
-                        }`}>
-                          {evento.tx_status === 'failed' ? 'Error en blockchain' : 'Registrando…'}
+                        <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-600">
+                          Registrando…
                         </span>
                       )}
                     </div>

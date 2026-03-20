@@ -11,6 +11,13 @@ interface ClienteItem {
   nombre: string
 }
 
+interface LineaHistorial {
+  descripcion: string
+  cantidad: number
+  precio_unitario: number
+  orden: number
+}
+
 interface FacturaHistorial {
   id: string
   numero: string
@@ -19,7 +26,9 @@ interface FacturaHistorial {
   paid_at: string | null
   created_at: string
   notas: string | null
+  payment_token: string | null
   clientes: { nombre: string } | null
+  lineas_factura: LineaHistorial[] | null
 }
 
 interface PantallaPosProps {
@@ -49,6 +58,7 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
   const [historialAbierto, setHistorialAbierto] = useState(false)
   const [historial, setHistorial] = useState<FacturaHistorial[]>([])
   const [totalDia, setTotalDia] = useState(0)
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
 
   // Ref para el polling
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -170,15 +180,15 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
   if (!stripeActivo) {
     return (
       <div className="mx-auto max-w-sm px-4 py-10">
-        <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+        <div className="rounded-2xl border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
             <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <p className="font-semibold text-yellow-900">Cobros no activados</p>
-          <p className="mt-1 text-sm text-yellow-700">Para usar el TPV necesitas activar tu cuenta de cobros.</p>
+          <p className="font-semibold text-yellow-900 dark:text-yellow-400">Cobros no activados</p>
+          <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-400">Para usar el TPV necesitas activar tu cuenta de cobros.</p>
           <Link
             href="/configuracion"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
@@ -194,17 +204,17 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
   if (estadoPOS === 'cobrado') {
     return (
       <div className="mx-auto max-w-sm px-4 py-10">
-        <div className="rounded-2xl border border-green-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-green-200 dark:border-green-800 bg-white dark:bg-gray-800 p-8 text-center shadow-sm">
           {/* Animación de éxito */}
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
             <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-xl font-bold text-gray-900">¡Cobro recibido!</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-gray-100">¡Cobro recibido!</p>
           <p className="mt-1 text-3xl font-bold text-green-600">{formatCurrency(totalCobro)}</p>
           {numeroFactura && (
-            <p className="mt-1 text-xs text-gray-400">Factura {numeroFactura}</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Factura {numeroFactura}</p>
           )}
           <div className="mt-6 flex flex-col gap-3">
             <button
@@ -216,7 +226,7 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
             {invoiceId && (
               <Link
                 href={`/facturas/${invoiceId}`}
-                className="w-full rounded-xl border border-gray-200 py-3 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Ver factura
               </Link>
@@ -232,25 +242,25 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
     return (
       <div className="mx-auto max-w-sm px-4 py-6">
         <div className="mb-4 flex items-center gap-2">
-          <button onClick={handleNuevoCobro} className="text-gray-500 hover:text-gray-700">
+          <button onClick={handleNuevoCobro} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <span className="text-sm font-medium text-gray-600">Cancelar cobro</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Cancelar cobro</span>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <p className="text-center text-sm font-medium text-gray-500">Esperando pago</p>
-          <p className="mt-1 text-center text-3xl font-bold text-gray-900">{formatCurrency(totalCobro)}</p>
-          <p className="mt-0.5 text-center text-xs text-gray-400">{concepto}</p>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
+          <p className="text-center text-sm font-medium text-gray-500 dark:text-gray-400">Esperando pago</p>
+          <p className="mt-1 text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(totalCobro)}</p>
+          <p className="mt-0.5 text-center text-xs text-gray-400 dark:text-gray-500">{concepto}</p>
 
           {/* QR */}
           <div className="mt-5 flex justify-center">
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt="QR de pago" className="h-52 w-52 rounded-xl border border-gray-100" />
+              <img src={qrDataUrl} alt="QR de pago" className="h-52 w-52 rounded-xl border border-gray-100 dark:border-gray-700" />
             ) : (
-              <div className="flex h-52 w-52 items-center justify-center rounded-xl border border-gray-100 bg-gray-50">
+              <div className="flex h-52 w-52 items-center justify-center rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                 <svg className="h-8 w-8 animate-spin text-gray-300" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -259,7 +269,7 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
             )}
           </div>
 
-          <p className="mt-3 text-center text-xs text-gray-400">
+          <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-500">
             El cliente escanea el QR con la cámara del móvil
           </p>
 
@@ -268,14 +278,14 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
             <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:-0.3s]" />
             <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:-0.15s]" />
             <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400" />
-            <span className="ml-2 text-xs text-gray-400">Esperando confirmación…</span>
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">Esperando confirmación…</span>
           </div>
 
           {/* Acciones del link */}
           <div className="mt-4 flex gap-2">
             <button
               onClick={handleCopiarLink}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               {copiado ? (
                 <><svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>Copiado</>
@@ -305,14 +315,14 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
     <div className="mx-auto max-w-sm px-4 py-6">
 
       {/* Formulario */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-base font-semibold text-gray-900">Cobro rápido</h2>
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
+        <h2 className="mb-5 text-base font-semibold text-gray-900 dark:text-gray-100">Cobro rápido</h2>
 
         {/* Importe */}
         <div className="mb-4">
-          <label className="mb-1 block text-xs font-medium text-gray-500">IMPORTE</label>
-          <div className="flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 focus-within:border-blue-500 focus-within:bg-white">
-            <span className="text-2xl font-bold text-gray-400">€</span>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">IMPORTE</label>
+          <div className="flex items-center gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-gray-800">
+            <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">€</span>
             <input
               type="number"
               inputMode="decimal"
@@ -321,32 +331,32 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
               placeholder="0,00"
               value={importe}
               onChange={e => setImporte(e.target.value)}
-              className="w-full bg-transparent text-3xl font-bold text-gray-900 placeholder:text-gray-300 focus:outline-none"
+              className="w-full bg-transparent text-3xl font-bold text-gray-900 dark:text-gray-100 placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Concepto */}
         <div className="mb-4">
-          <label className="mb-1 block text-xs font-medium text-gray-500">CONCEPTO</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">CONCEPTO</label>
           <input
             type="text"
             placeholder="Ej: Corte de pelo, Reparación, Clase…"
             value={concepto}
             onChange={e => setConcepto(e.target.value)}
             maxLength={80}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
 
         {/* Cliente */}
         {clientes.length > 0 && (
           <div className="mb-5">
-            <label className="mb-1 block text-xs font-medium text-gray-500">CLIENTE <span className="text-gray-300">(opcional)</span></label>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">CLIENTE <span className="text-gray-300 dark:text-gray-600">(opcional)</span></label>
             <select
               value={clienteId}
               onChange={e => setClienteId(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="">— Cobro directo —</option>
               {clientes.map(c => (
@@ -357,7 +367,7 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
         )}
 
         {error && (
-          <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+          <p className="mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600">{error}</p>
         )}
 
         <button
@@ -386,15 +396,15 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
       </div>
 
       {/* Historial del día */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <button
           onClick={() => setHistorialAbierto(v => !v)}
           className="flex w-full items-center justify-between px-5 py-4"
         >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-900">Hoy</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Hoy</span>
             {historial.length > 0 && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+              <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400">
                 {historial.filter(f => f.estado === 'pagada').length} cobros
               </span>
             )}
@@ -402,7 +412,7 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
           <div className="flex items-center gap-3">
             <span className="text-base font-bold text-green-600">{formatCurrency(totalDia)}</span>
             <svg
-              className={`h-4 w-4 text-gray-400 transition-transform ${historialAbierto ? 'rotate-180' : ''}`}
+              className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${historialAbierto ? 'rotate-180' : ''}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -413,36 +423,130 @@ export function PantallaPos({ stripeActivo, clientes }: PantallaPosProps) {
         {historialAbierto && (
           <>
             {historial.length === 0 ? (
-              <p className="px-5 pb-4 text-sm text-gray-400">Sin cobros hoy todavía.</p>
+              <p className="px-5 pb-4 text-sm text-gray-400 dark:text-gray-500">Sin cobros hoy todavía.</p>
             ) : (
-              <ul className="divide-y divide-gray-50 border-t border-gray-100">
-                {historial.map(f => {
-                  const hora = new Date(f.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-                  const concepto = f.notas?.replace('Cobro POS: ', '') ?? f.numero
+              <>
+                <ul className="divide-y divide-gray-50 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                  {historial.map(f => {
+                    const horaCorta = new Date(f.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+                    const horaExacta = new Date(f.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    const concepto = f.notas?.replace('Cobro POS: ', '') ?? f.numero
+                    const abierto = expandidos.has(f.id)
+                    const lineas = [...(f.lineas_factura ?? [])].sort((a, b) => a.orden - b.orden)
+
+                    return (
+                      <li key={f.id}>
+                        {/* Fila principal */}
+                        <button
+                          onClick={() => setExpandidos(prev => {
+                            const next = new Set(prev)
+                            next.has(f.id) ? next.delete(f.id) : next.add(f.id)
+                            return next
+                          })}
+                          className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{concepto}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{horaCorta} · {f.clientes?.nombre ?? 'Cobro directo'}</p>
+                          </div>
+                          <div className="ml-3 flex shrink-0 items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              f.estado === 'pagada' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                            }`}>
+                              {f.estado === 'pagada' ? formatCurrency(f.total) : 'Pendiente'}
+                            </span>
+                            <svg
+                              className={`h-3.5 w-3.5 text-gray-400 dark:text-gray-500 transition-transform ${abierto ? 'rotate-180' : ''}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
+
+                        {/* Detalle expandido */}
+                        {abierto && (
+                          <div className="border-t border-gray-50 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-5 py-3">
+                            {/* Líneas */}
+                            {lineas.length > 0 && (
+                              <table className="mb-3 w-full text-xs">
+                                <thead>
+                                  <tr className="text-left text-gray-400 dark:text-gray-500">
+                                    <th className="pb-1 font-medium">Concepto</th>
+                                    <th className="pb-1 text-center font-medium">Ud.</th>
+                                    <th className="pb-1 text-right font-medium">P. unit.</th>
+                                    <th className="pb-1 text-right font-medium">Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                  {lineas.map((l, i) => (
+                                    <tr key={i} className="text-gray-700 dark:text-gray-300">
+                                      <td className="py-1 pr-2">{l.descripcion}</td>
+                                      <td className="py-1 text-center">{l.cantidad}</td>
+                                      <td className="py-1 text-right">{formatCurrency(l.precio_unitario)}</td>
+                                      <td className="py-1 text-right font-medium">{formatCurrency(l.cantidad * l.precio_unitario)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+
+                            {/* Metadatos */}
+                            <dl className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <dt className="text-gray-400 dark:text-gray-500">Hora exacta</dt>
+                                <dd className="font-medium text-gray-700 dark:text-gray-300">{horaExacta}</dd>
+                              </div>
+                              <div className="flex justify-between">
+                                <dt className="text-gray-400 dark:text-gray-500">Método de pago</dt>
+                                <dd className="font-medium text-gray-700 dark:text-gray-300">Stripe / QR</dd>
+                              </div>
+                              {f.payment_token && (
+                                <div className="flex items-start justify-between gap-2">
+                                  <dt className="shrink-0 text-gray-400 dark:text-gray-500">Referencia</dt>
+                                  <dd className="break-all font-mono text-gray-500 dark:text-gray-400">{f.payment_token}</dd>
+                                </div>
+                              )}
+                            </dl>
+                          </div>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+
+                {/* Resumen del día */}
+                {(() => {
+                  const cobradas = historial.filter(f => f.estado === 'pagada')
+                  const ticketMedio = cobradas.length > 0 ? totalDia / cobradas.length : 0
                   return (
-                    <li key={f.id} className="flex items-center justify-between px-5 py-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900">{concepto}</p>
-                        <p className="text-xs text-gray-400">{hora} · {f.clientes?.nombre ?? 'Cobro directo'}</p>
+                    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-5 py-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Resumen del día</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-base font-bold text-gray-900 dark:text-gray-100">{formatCurrency(totalDia)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Total cobrado</p>
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-gray-900 dark:text-gray-100">{cobradas.length}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Transacciones</p>
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-gray-900 dark:text-gray-100">{formatCurrency(ticketMedio)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Ticket medio</p>
+                        </div>
                       </div>
-                      <div className="ml-3 flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          f.estado === 'pagada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {f.estado === 'pagada' ? formatCurrency(f.total) : 'Pendiente'}
-                        </span>
-                      </div>
-                    </li>
+                    </div>
                   )
-                })}
-              </ul>
+                })()}
+              </>
             )}
 
             {historial.length > 0 && (
-              <div className="border-t border-gray-100 px-5 py-3">
+              <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3">
                 <button
                   onClick={handleCierreDeCaja}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

@@ -51,7 +51,7 @@ function CeldaHash({ invoiceHash }: { invoiceHash: string | null }) {
     <button
       onClick={copiar}
       title={`SHA-256: ${invoiceHash}\n\nClic para copiar`}
-      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
     >
       <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -78,31 +78,31 @@ export function SeccionTransaccionesXRPL() {
   if (cargando || txs.length === 0) return null
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+    <section className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">Registros blockchain</h2>
-          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">XRPL</span>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Registros blockchain</h2>
+          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">XRPL</span>
         </div>
-        <p className="text-xs text-gray-400">Inmutables · Verificables públicamente</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">Inmutables · Verificables públicamente</p>
       </div>
 
       {/* Tabla desktop */}
       <table className="hidden w-full md:table">
         <thead>
-          <tr className="border-b border-gray-100">
+          <tr className="border-b border-gray-100 dark:border-gray-700">
             {['Tx Hash', 'Factura', 'Hash SHA-256', 'Importe', 'Fecha', ''].map(h => (
-              <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
           {txs.map(tx => (
-            <tr key={tx.hash} className="hover:bg-gray-50/50">
+            <tr key={tx.hash} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50">
               <td className="px-5 py-3">
-                <span className="font-mono text-xs text-gray-500">{hashCorto(tx.hash)}</span>
+                <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{hashCorto(tx.hash)}</span>
               </td>
               <td className="px-5 py-3">
                 <CeldaFactura tx={tx} />
@@ -110,10 +110,10 @@ export function SeccionTransaccionesXRPL() {
               <td className="px-5 py-3">
                 <CeldaHash invoiceHash={tx.invoiceHash} />
               </td>
-              <td className="px-5 py-3 text-sm font-medium text-gray-900">
+              <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                 {tx.amountEur ? `${Number(tx.amountEur).toFixed(2)} €` : '—'}
               </td>
-              <td className="px-5 py-3 text-sm text-gray-500">
+              <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
                 {formatTimestamp(tx.timestamp)}
               </td>
               <td className="px-5 py-3 text-right">
@@ -153,35 +153,35 @@ export function SeccionTransaccionesXRPL() {
       </table>
 
       {/* Lista móvil */}
-      <ul className="divide-y divide-gray-100 md:hidden">
+      <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
         {txs.map(tx => (
           <li key={tx.hash} className="px-5 py-3.5 space-y-1.5">
             <div className="flex items-center justify-between">
               <CeldaFactura tx={tx} />
               {tx.amountEur && (
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {Number(tx.amountEur).toFixed(2)} €
                 </span>
               )}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{formatTimestamp(tx.timestamp)}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{formatTimestamp(tx.timestamp)}</span>
               <div className="flex gap-3">
                 {tx.invoiceProofUrl && (
                   <a href={tx.invoiceProofUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-emerald-600 hover:underline">
+                    className="text-xs text-emerald-600 hover:underline dark:text-emerald-400">
                     Prueba →
                   </a>
                 )}
                 <a href={tx.explorerUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-indigo-600 hover:underline">
+                  className="text-xs text-indigo-600 hover:underline dark:text-indigo-400">
                   XRPL →
                 </a>
               </div>
             </div>
             {tx.invoiceHash && (
               <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-400">SHA-256:</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">SHA-256:</span>
                 <CeldaHash invoiceHash={tx.invoiceHash} />
               </div>
             )}
@@ -189,8 +189,8 @@ export function SeccionTransaccionesXRPL() {
         ))}
       </ul>
 
-      <div className="border-t border-gray-100 px-5 py-3">
-        <p className="text-xs text-gray-400">
+      <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3">
+        <p className="text-xs text-gray-400 dark:text-gray-500">
           {txs.length} registro{txs.length !== 1 ? 's' : ''} inmutable{txs.length !== 1 ? 's' : ''} en XRP Ledger
         </p>
       </div>

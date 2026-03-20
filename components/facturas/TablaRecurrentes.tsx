@@ -57,39 +57,39 @@ function diasRestantes(fecha: string): number {
 // ── Sub-componentes ────────────────────────────────────────────────────────────
 
 function CountdownBadge({ fecha, activo }: { fecha: string | null; activo: boolean }) {
-  if (!activo || !fecha) return <span className="text-xs text-gray-400">Pausada</span>
+  if (!activo || !fecha) return <span className="text-xs text-gray-400 dark:text-gray-500">Pausada</span>
   const dias = diasRestantes(fecha)
   if (dias < 0) return (
-    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+    <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-semibold text-red-700 dark:text-red-400">
       Atrasada
     </span>
   )
   if (dias === 0) return (
-    <span className="inline-flex animate-pulse items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+    <span className="inline-flex animate-pulse items-center rounded-full bg-orange-100 dark:bg-orange-900/20 px-2 py-0.5 text-xs font-semibold text-orange-700">
       Hoy
     </span>
   )
   if (dias <= 7) return (
-    <span className="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
+    <span className="inline-flex items-center rounded-full bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 text-xs font-medium text-orange-600">
       en {dias} día{dias !== 1 ? 's' : ''}
     </span>
   )
   return (
     <span className="text-sm text-violet-600">
       {formatDate(fecha)}
-      <span className="ml-1 text-xs text-gray-400">({dias}d)</span>
+      <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({dias}d)</span>
     </span>
   )
 }
 
 function ResumenGeneradas({ facturas }: { facturas: FacturaGenerada[] }) {
-  if (facturas.length === 0) return <span className="text-xs text-gray-400">Sin ciclos</span>
+  if (facturas.length === 0) return <span className="text-xs text-gray-400 dark:text-gray-500">Sin ciclos</span>
   const pagadas = facturas.filter(f => f.estado === 'pagada').length
   const pendientes = facturas.filter(f => f.estado === 'emitida' || f.estado === 'vencida').length
   return (
     <div className="flex flex-wrap items-center gap-2">
       {pagadas > 0 && (
-        <span className="flex items-center gap-1 text-xs text-green-700">
+        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
@@ -97,7 +97,7 @@ function ResumenGeneradas({ facturas }: { facturas: FacturaGenerada[] }) {
         </span>
       )}
       {pendientes > 0 && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-1.5 py-0.5 text-xs font-semibold text-orange-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 text-xs font-semibold text-orange-700">
           <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
@@ -114,7 +114,7 @@ function ResumenGeneradas({ facturas }: { facturas: FacturaGenerada[] }) {
 
 function CobroStatusBadge({ status }: { status: CobroStatus }) {
   if (status === 'active') return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/20 px-2 py-0.5 text-xs font-semibold text-blue-700">
       <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
       </svg>
@@ -122,7 +122,7 @@ function CobroStatusBadge({ status }: { status: CobroStatus }) {
     </span>
   )
   if (status === 'pending_setup') return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 text-xs font-semibold text-yellow-700 dark:text-yellow-400">
       <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -131,7 +131,7 @@ function CobroStatusBadge({ status }: { status: CobroStatus }) {
     </span>
   )
   if (status === 'past_due') return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-semibold text-red-700 dark:text-red-400">
       <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
       </svg>
@@ -139,7 +139,7 @@ function CobroStatusBadge({ status }: { status: CobroStatus }) {
     </span>
   )
   if (status === 'canceled') return (
-    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+    <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
       Cancelado
     </span>
   )
@@ -175,15 +175,15 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
 
   if (!esPro) {
     return (
-      <div className="rounded-xl border border-violet-200 bg-violet-50 p-8 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
+      <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 p-8 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/40">
           <svg className="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </div>
-        <p className="font-semibold text-gray-900">Facturas recurrentes</p>
-        <p className="mt-1 text-sm text-gray-500">Automatiza tu facturación con el Plan Básico o superior.</p>
+        <p className="font-semibold text-gray-900 dark:text-gray-100">Facturas recurrentes</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Automatiza tu facturación con el Plan Básico o superior.</p>
         <Link href="/configuracion/planes"
           className="mt-4 inline-block rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
           Ver planes
@@ -309,12 +309,12 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
     <>
       {/* Cabecera + botón nueva */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-gray-500">Resumen</h2>
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Resumen</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => router.refresh()}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-lg p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
             title="Actualizar"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -333,36 +333,36 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
 
       {/* Métricas */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+        <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
           <p className="text-xs font-medium text-green-600">MRR</p>
-          <p className="mt-1 text-2xl font-bold text-green-800">{formatCurrency(mrrTotal)}</p>
-          <p className="mt-0.5 text-xs text-green-600">ingresos / mes</p>
+          <p className="mt-1 text-2xl font-bold text-green-800 dark:text-green-300">{formatCurrency(mrrTotal)}</p>
+          <p className="mt-0.5 text-xs text-green-600 dark:text-green-400">ingresos / mes</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-white p-4">
-          <p className="text-xs font-medium text-gray-500">ARR</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(arrTotal)}</p>
-          <p className="mt-0.5 text-xs text-gray-400">proyección anual</p>
+        <div className="rounded-xl border border-blue-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">ARR</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(arrTotal)}</p>
+          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">proyección anual</p>
         </div>
-        <div className={`rounded-xl border p-4 ${numPendientes > 0 ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-white'}`}>
-          <p className={`text-xs font-medium ${numPendientes > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+        <div className={`rounded-xl border p-4 ${numPendientes > 0 ? 'border-orange-200 bg-orange-50 dark:bg-yellow-900/20 dark:border-yellow-800' : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
+          <p className={`text-xs font-medium ${numPendientes > 0 ? 'text-orange-600' : 'text-gray-500 dark:text-gray-400'}`}>
             Sin cobrar
           </p>
-          <p className={`mt-1 text-2xl font-bold ${numPendientes > 0 ? 'text-orange-700' : 'text-gray-400'}`}>
+          <p className={`mt-1 text-2xl font-bold ${numPendientes > 0 ? 'text-orange-700' : 'text-gray-400 dark:text-gray-500'}`}>
             {numPendientes > 0 ? formatCurrency(totalPendiente) : '—'}
           </p>
-          <p className={`mt-0.5 text-xs ${numPendientes > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
+          <p className={`mt-0.5 text-xs ${numPendientes > 0 ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'}`}>
             {numPendientes > 0 ? `${numPendientes} factura${numPendientes !== 1 ? 's' : ''} acumulada${numPendientes !== 1 ? 's' : ''}` : 'todo cobrado'}
           </p>
         </div>
-        <div className="rounded-xl border border-orange-100 bg-white p-4">
-          <p className="text-xs font-medium text-gray-500">Próximo envío</p>
+        <div className="rounded-xl border border-orange-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Próximo envío</p>
           {proximaFecha ? (
             <>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{formatDate(proximaFecha)}</p>
-              <p className="mt-0.5 text-xs text-gray-400">{formatCurrency(importeProximoCiclo)} a facturar</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatDate(proximaFecha)}</p>
+              <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{formatCurrency(importeProximoCiclo)} a facturar</p>
             </>
           ) : (
-            <p className="mt-1 text-sm text-gray-400">Sin programadas</p>
+            <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Sin programadas</p>
           )}
         </div>
       </div>
@@ -377,10 +377,10 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
           return (
             <button key={f} onClick={() => setFiltro(f)}
               className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-                filtro === f ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filtro === f ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}>
               {etiquetas[f]}
-              <span className={`rounded-full px-1.5 py-0.5 text-xs ${filtro === f ? 'bg-violet-500' : 'bg-gray-200 text-gray-600'}`}>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs ${filtro === f ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
                 {conteo}
               </span>
             </button>
@@ -389,22 +389,22 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
       </div>
 
       {/* Tabla */}
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         {recurrentes.length === 0 ? (
           <div className="py-16 text-center">
-            <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <p className="mt-3 text-sm font-medium text-gray-900">Sin facturas recurrentes</p>
-            <p className="mt-1 text-sm text-gray-500">Crea una factura recurrente y se generará automáticamente en cada ciclo.</p>
+            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">Sin facturas recurrentes</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Crea una factura recurrente y se generará automáticamente en cada ciclo.</p>
             <Link href="/facturas/recurrentes/nueva"
               className="mt-5 inline-block rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
               Nueva factura recurrente
             </Link>
           </div>
         ) : filtradas.length === 0 ? (
-          <div className="py-10 text-center text-sm text-gray-500">No hay elementos que coincidan con el filtro.</div>
+          <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay elementos que coincidan con el filtro.</div>
         ) : (
           <>
             {/* ── Desktop ── */}
@@ -419,9 +419,9 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                 <col style={{ width: '13%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-gray-200">
+                <tr className="border-b border-gray-200 dark:border-gray-700">
                   {['Cliente', 'Nº Base', 'Importe', 'Frecuencia', 'Próximo envío', 'Ciclos cobrados', 'Estado'].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -431,10 +431,10 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                   return (
                     <Fragment key={r.id}>
                       <tr
-                        className="group cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50"
+                        className="group cursor-pointer border-b border-gray-100 dark:border-gray-700 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                         onClick={() => router.push(`/facturas/recurrentes/${r.id}`)}
                       >
-                        <td className="px-5 py-3.5 text-sm text-gray-700">
+                        <td className="px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300">
                           <div className="flex items-center gap-1.5">
                             {pendientes > 0 && (
                               <span className="flex h-2 w-2 rounded-full bg-orange-400" title={`${pendientes} pendientes`} />
@@ -442,9 +442,9 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                             {r.facturas.clientes?.nombre ?? '—'}
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{r.facturas.numero}</td>
-                        <td className="px-5 py-3.5 text-sm font-semibold text-gray-900">{formatCurrency(r.facturas.total)}</td>
-                        <td className="px-5 py-3.5 text-sm text-gray-500">{etiquetaFrecuencia(r.frecuencia)}</td>
+                        <td className="px-5 py-3.5 text-sm font-medium text-gray-900 dark:text-gray-100">{r.facturas.numero}</td>
+                        <td className="px-5 py-3.5 text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(r.facturas.total)}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400">{etiquetaFrecuencia(r.frecuencia)}</td>
                         <td className="px-5 py-3.5">
                           <CountdownBadge fecha={r.proxima_fecha} activo={r.activo} />
                         </td>
@@ -454,20 +454,21 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1 whitespace-nowrap" onClick={e => e.stopPropagation()}>
                             {/* Badge de cobro automático si aplica */}
-                            {r.cobro_automatico || r.cobro_status !== 'manual'
-                              ? <CobroStatusBadge status={r.cobro_status} />
-                              : (
-                                <button
-                                  onClick={() => handleToggle(r.id, r.activo)}
-                                  disabled={isPending}
-                                  className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                                    r.activo ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  {r.activo ? 'Activa' : 'Pausada'}
-                                </button>
-                              )
-                            }
+                            {(r.cobro_automatico || r.cobro_status !== 'manual') && (
+                              <CobroStatusBadge status={r.cobro_status} />
+                            )}
+                            {/* Toggle pausar/activar — siempre visible */}
+                            <button
+                              onClick={() => handleToggle(r.id, r.activo)}
+                              disabled={isPending}
+                              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                                r.activo
+                                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                              }`}
+                            >
+                              {isPending ? '...' : r.activo ? 'Pausar recurrencia' : 'Activar recurrencia'}
+                            </button>
 
                             {/* Botón activar cobro automático (solo si manual + cobros activos) */}
                             {r.cobro_status === 'manual' && cobrosActivos && (
@@ -475,7 +476,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                                 type="button"
                                 onClick={() => handleActivarCobro(r.id, r.setup_url)}
                                 disabled={loadingActivar === r.id}
-                                className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                                className="flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                               >
                                 {loadingActivar === r.id ? (
                                   <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -496,7 +497,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                               <button
                                 type="button"
                                 onClick={() => handleActivarCobro(r.id, r.setup_url)}
-                                className="rounded-lg px-2 py-1 text-xs font-medium text-yellow-700 hover:bg-yellow-50"
+                                className="rounded-lg px-2 py-1 text-xs font-medium text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                               >
                                 Ver enlace
                               </button>
@@ -508,7 +509,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                                 type="button"
                                 onClick={() => handleCopiarPortal(r.id, r.stripe_customer_id!, r.facturas.clientes?.nombre ?? '—')}
                                 title="Copiar enlace de gestión para el cliente"
-                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-gray-500 hover:bg-violet-50 hover:text-violet-600"
+                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-violet-50 hover:text-violet-600"
                               >
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -525,7 +526,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                                 onClick={() => handleDesactivarCobro(r.id)}
                                 disabled={loadingDesactivar === r.id}
                                 title="Desactivar cobro automático"
-                                className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                                className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-red-50 hover:text-red-500"
                               >
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -541,11 +542,11 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                                   <button onClick={() => handleEliminar(r.id)} disabled={isPending}
                                     className="rounded-lg bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700">Sí</button>
                                   <button onClick={() => setConfirmandoId(null)}
-                                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600">No</button>
+                                    className="rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400">No</button>
                                 </div>
                               ) : (
                                 <button onClick={() => setConfirmandoId(r.id)} title="Eliminar"
-                                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
+                                  className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-red-50 hover:text-red-500">
                                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -563,7 +564,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
             </table>
 
             {/* ── Móvil ── */}
-            <ul className="divide-y divide-gray-100 md:hidden">
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
               {filtradas.map((r) => {
                 const pendientes = r.facturas_generadas.filter(f => f.estado === 'emitida' || f.estado === 'vencida').length
                 return (
@@ -576,14 +577,14 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             {pendientes > 0 && <span className="flex h-2 w-2 rounded-full bg-orange-400" />}
-                            <p className="truncate text-sm font-medium text-gray-900">
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                               {r.facturas.clientes?.nombre ?? '—'}
                             </p>
                           </div>
-                          <p className="text-xs text-gray-400">{r.facturas.numero} · {etiquetaFrecuencia(r.frecuencia)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{r.facturas.numero} · {etiquetaFrecuencia(r.frecuencia)}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-semibold text-gray-900">{formatCurrency(r.facturas.total)}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(r.facturas.total)}</p>
                           <CountdownBadge fecha={r.proxima_fecha} activo={r.activo} />
                         </div>
                       </div>
@@ -596,12 +597,15 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                           <CobroStatusBadge status={r.cobro_status} />
                         )}
 
-                        {r.cobro_status === 'manual' && (
-                          <button onClick={() => handleToggle(r.id, r.activo)} disabled={isPending}
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${r.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {r.activo ? 'Activa' : 'Pausada'}
-                          </button>
-                        )}
+                        {/* Toggle pausar/activar — siempre visible */}
+                        <button onClick={() => handleToggle(r.id, r.activo)} disabled={isPending}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                            r.activo
+                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          }`}>
+                          {isPending ? '...' : r.activo ? 'Pausar recurrencia' : 'Activar recurrencia'}
+                        </button>
 
                         {/* Activar cobro automático (móvil) */}
                         {r.cobro_status === 'manual' && cobrosActivos && (
@@ -609,7 +613,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                             type="button"
                             onClick={() => handleActivarCobro(r.id, r.setup_url)}
                             disabled={loadingActivar === r.id}
-                            className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                            className="rounded-full bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-xs font-medium text-blue-700"
                           >
                             {loadingActivar === r.id ? 'Activando...' : '⚡ Cobro auto'}
                           </button>
@@ -620,7 +624,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                           <button
                             type="button"
                             onClick={() => handleActivarCobro(r.id, r.setup_url)}
-                            className="rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700"
+                            className="rounded-full bg-yellow-50 dark:bg-yellow-900/20 px-2.5 py-1 text-xs font-medium text-yellow-700 dark:text-yellow-400"
                           >
                             Ver enlace
                           </button>
@@ -644,7 +648,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                               <button onClick={() => handleEliminar(r.id)} disabled={isPending}
                                 className="rounded bg-red-600 px-2 py-1 text-xs text-white">Sí</button>
                               <button onClick={() => setConfirmandoId(null)}
-                                className="rounded border px-2 py-1 text-xs text-gray-600">No</button>
+                                className="rounded border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs text-gray-600 dark:text-gray-400">No</button>
                             </div>
                           ) : (
                             <button onClick={() => setConfirmandoId(r.id)} className="text-xs text-red-400 hover:text-red-600">
@@ -659,8 +663,8 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
               })}
             </ul>
 
-            <div className="border-t border-gray-100 px-5 py-3">
-              <p className="text-xs text-gray-400">
+            <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {filtradas.length === recurrentes.length
                   ? `${recurrentes.length} factura${recurrentes.length !== 1 ? 's' : ''} recurrente${recurrentes.length !== 1 ? 's' : ''}`
                   : `${filtradas.length} de ${recurrentes.length}`}
@@ -679,11 +683,11 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
       {/* Panel de activación — aparece cuando se genera la URL de setup */}
       {activandoId && setupUrl && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl">
+          <div className="w-full max-w-md rounded-t-2xl bg-white dark:bg-gray-800 p-6 shadow-xl sm:rounded-2xl">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="font-semibold text-gray-900">Enlace de activación</p>
-                <p className="mt-0.5 text-sm text-gray-500">
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Enlace de activación</p>
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                   Comparte este enlace con tu cliente para que introduzca su tarjeta.
                   Una vez lo haga, los cobros serán automáticos.
                 </p>
@@ -691,15 +695,15 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
               <button
                 type="button"
                 onClick={() => { setActivandoId(null); setSetupUrl(null) }}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <p className="flex-1 truncate text-sm font-mono text-gray-700">{setupUrl}</p>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2">
+              <p className="flex-1 truncate text-sm font-mono text-gray-700 dark:text-gray-300">{setupUrl}</p>
               <button
                 type="button"
                 onClick={() => handleCopiarUrl(setupUrl)}
@@ -708,7 +712,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                 {copiado ? '✓ Copiado' : 'Copiar'}
               </button>
             </div>
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
               Este enlace puede compartirse por email, WhatsApp o cualquier otro medio.
               Expira en 24 horas — si caduca, vuelve a hacer clic en &quot;Activar cobro automático&quot;.
             </p>
@@ -719,27 +723,27 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
       {/* Modal portal del cliente */}
       {portalModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl">
+          <div className="w-full max-w-md rounded-t-2xl bg-white dark:bg-gray-800 p-6 shadow-xl sm:rounded-2xl">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="font-semibold text-gray-900">Portal de gestión del cliente</p>
-                <p className="mt-0.5 text-sm text-gray-500">
-                  Envía este enlace a <span className="font-medium text-gray-700">{portalModal.clienteNombre}</span> para
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Portal de gestión del cliente</p>
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                  Envía este enlace a <span className="font-medium text-gray-700 dark:text-gray-300">{portalModal.clienteNombre}</span> para
                   que pueda ver su historial de pagos, actualizar su tarjeta o cancelar la suscripción.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPortalModal(null)}
-                className="ml-3 shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                className="ml-3 shrink-0 rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <p className="flex-1 truncate font-mono text-sm text-gray-500">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2">
+              <p className="flex-1 truncate font-mono text-sm text-gray-500 dark:text-gray-400">
                 {window.location.origin}/api/stripe/recurrentes/…/portal-publico
               </p>
               <button
@@ -750,7 +754,7 @@ export function TablaRecurrentes({ recurrentes, esPro, cobrosActivos }: Props) {
                 {copiadoPortal ? '✓ Copiado' : 'Copiar enlace'}
               </button>
             </div>
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
               El enlace redirige directamente al portal de Stripe — no requiere que el cliente tenga cuenta en FacturX.
             </p>
           </div>

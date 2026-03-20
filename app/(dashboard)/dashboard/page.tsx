@@ -38,8 +38,13 @@ export default async function DashboardPage() {
 
   const ahora = new Date()
   const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-  const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
   const hace12Meses = new Date(ahora.getFullYear(), ahora.getMonth() - 11, 1).toISOString().slice(0, 10)
+
+  // Próximo mes natural (para cobros automáticos)
+  const inicioPróxMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1)
+  const finPróxMes = new Date(ahora.getFullYear(), ahora.getMonth() + 2, 0)
+  const inicioPróxMesStr = inicioPróxMes.toISOString().slice(0, 10)
+  const finPróxMesStr = finPróxMes.toISOString().slice(0, 10)
 
   // Notificaciones no leídas del usuario
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,7 +55,7 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(5) as { data: { id: string; tipo: string; mensaje: string; created_at: string; metadata: Record<string, unknown> | null }[] | null }
 
-  const [perfil, { data: rawFacturas }, { data: rawSuscripciones }] = await Promise.all([
+  const [perfil, { data: rawFacturas }, { data: rawSuscripciones }, { data: rawRecurrentesAuto }] = await Promise.all([
     getPerfil(user!.id),
 
     // Todas las facturas del usuario — usadas para tabla, stats y gráfico
@@ -102,11 +107,30 @@ export default async function DashboardPage() {
           clientes: { nombre: string } | null
         }> | null
       }>,
+
+    // Recurrentes con cobro automático activo y próxima ejecución en el mes siguiente
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('facturas_recurrentes')
+      .select('id, proxima_fecha, facturas!factura_base_id(total)')
+      .eq('user_id', user!.id)
+      .eq('cobro_automatico', true)
+      .eq('cobro_status', 'active')
+      .eq('activo', true)
+      .gte('proxima_fecha', inicioPróxMesStr)
+      .lte('proxima_fecha', finPróxMesStr) as Promise<{
+        data: Array<{
+          id: string
+          proxima_fecha: string
+          facturas: { total: number } | null
+        }> | null
+      }>,
   ])
 
   // ── Datos normalizados ──────────────────────────────────────────────────────
   const facturas = rawFacturas ?? []
   const suscripciones = rawSuscripciones ?? []
+  const recurrentesAuto = rawRecurrentesAuto ?? []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const perfilAny = perfil as any
@@ -128,13 +152,9 @@ export default async function DashboardPage() {
     .reduce((s, f) => s + f.total, 0)
   const numVencidas = facturas.filter(f => f.estado === 'vencida').length
 
-  const proximosCobros = suscripciones
-    .filter(s => {
-      if (!s.next_billing_date) return false
-      const fecha = new Date(s.next_billing_date)
-      return fecha >= ahora && fecha <= finMes
-    })
-    .reduce((s, sub) => s + sub.amount, 0)
+  // MRR automático: suma de totales con IVA de recurrentes con proxima_fecha en el mes siguiente
+  const mrrProximoMes = recurrentesAuto.reduce((s, r) => s + (r.facturas?.total ?? 0), 0)
+  const numRecurrentesAuto = recurrentesAuto.length
 
   // ── Gráfico: últimos 12 meses ───────────────────────────────────────────────
   const meses = ultimosMeses(12)
@@ -182,7 +202,7 @@ export default async function DashboardPage() {
 
       {/* ── Cabecera ── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Panel de control</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Panel de control</h1>
         <Link
           href="/facturas/nueva"
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -260,22 +280,26 @@ export default async function DashboardPage() {
           color="red"
         />
         <TarjetaStat
-          titulo="Cobros automáticos"
-          valor={formatCurrency(proximosCobros)}
-          descripcion="Este mes · suscripciones activas"
+          titulo="Cobros automáticos próximo mes"
+          valor={mrrProximoMes > 0 ? formatCurrency(mrrProximoMes) : '—'}
+          descripcion={
+            mrrProximoMes > 0
+              ? `Basado en ${numRecurrentesAuto} recurrente${numRecurrentesAuto !== 1 ? 's' : ''} activa${numRecurrentesAuto !== 1 ? 's' : ''}`
+              : 'Sin cobros automáticos programados'
+          }
           color="blue"
         />
       </div>
 
       {/* ── Gráfico 12 meses ── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Ingresos — últimos 12 meses</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Ingresos — últimos 12 meses</h2>
         <GraficoIngresos datos={datosGrafico} />
       </div>
 
       {/* ── Tabla de facturas ── */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">Facturas</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Facturas</h2>
         <TablaFacturasDashboard
           facturas={facturasTabla}
           cobrosActivos={cobrosActivos}
@@ -304,19 +328,19 @@ function TarjetaStat({
   esContador?: boolean
 }) {
   const estilos = {
-    green:  { borde: 'border-green-100',  texto: 'text-green-700' },
-    orange: { borde: 'border-orange-100', texto: 'text-gray-900' },
-    red:    { borde: 'border-red-200 bg-red-50', texto: 'text-red-700' },
-    blue:   { borde: 'border-blue-100',   texto: 'text-gray-900' },
-    indigo: { borde: 'border-indigo-100 bg-indigo-50', texto: 'text-indigo-700' },
+    green:  { borde: 'border-green-100 dark:border-green-900/30',   texto: 'text-green-700 dark:text-green-400' },
+    orange: { borde: 'border-orange-100 dark:border-orange-900/30', texto: 'text-gray-900 dark:text-gray-100' },
+    red:    { borde: 'border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/10',       texto: 'text-red-700 dark:text-red-400' },
+    blue:   { borde: 'border-blue-100 dark:border-blue-900/30',     texto: 'text-gray-900 dark:text-gray-100' },
+    indigo: { borde: 'border-indigo-100 bg-indigo-50 dark:border-indigo-900/30 dark:bg-indigo-900/10', texto: 'text-indigo-700 dark:text-indigo-400' },
   }
   const { borde, texto } = estilos[color]
 
   return (
-    <div className={`rounded-xl border bg-white p-5 ${borde}`}>
-      <p className="text-xs font-medium text-gray-500">{titulo}</p>
+    <div className={`rounded-xl border bg-white p-5 dark:bg-gray-800 dark:border-gray-700 ${borde}`}>
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{titulo}</p>
       <p className={`mt-1 font-bold ${esContador ? 'text-3xl' : 'text-2xl'} ${texto}`}>{valor}</p>
-      {descripcion && <p className="mt-1 text-xs text-gray-400">{descripcion}</p>}
+      {descripcion && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{descripcion}</p>}
     </div>
   )
 }

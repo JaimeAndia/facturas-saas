@@ -55,7 +55,7 @@ export function FormularioPerfil({ perfil }: FormularioPerfilProps) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {campos.map(({ name, label, requerido, defaultValue }) => (
           <div key={name} className="flex flex-col gap-1">
-            <label htmlFor={name} className="text-xs font-medium text-gray-600">
+            <label htmlFor={name} className="text-xs font-medium text-gray-600 dark:text-gray-400">
               {label}{requerido && <span className="ml-0.5 text-red-500">*</span>}
             </label>
             <input
@@ -64,17 +64,17 @@ export function FormularioPerfil({ perfil }: FormularioPerfilProps) {
               type="text"
               required={requerido}
               defaultValue={defaultValue}
-              className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="h-9 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-200 px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
         ))}
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs text-red-600">{error}</p>
       )}
 
-      <div className="flex items-center gap-3 border-t pt-4">
+      <div className="flex items-center gap-3 border-t dark:border-gray-700 pt-4">
         <Button type="submit" cargando={isPending}>
           Guardar cambios
         </Button>
@@ -82,7 +82,7 @@ export function FormularioPerfil({ perfil }: FormularioPerfilProps) {
           type="button"
           onClick={() => router.push('/configuracion')}
           disabled={isPending}
-          className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50"
         >
           Cancelar
         </button>

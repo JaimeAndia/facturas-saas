@@ -40,11 +40,11 @@ interface Props {
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const BADGE: Record<string, { label: string; clase: string }> = {
-  pagada:    { label: 'Cobrada',   clase: 'bg-green-100 text-green-700' },
-  emitida:   { label: 'Pendiente', clase: 'bg-orange-100 text-orange-700' },
-  vencida:   { label: 'Vencida',   clase: 'bg-red-100 text-red-700' },
-  cancelada: { label: 'Incobrable', clase: 'bg-gray-100 text-gray-500' },
-  borrador:  { label: 'Borrador',  clase: 'bg-gray-100 text-gray-500' },
+  pagada:    { label: 'Cobrada',    clase: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  emitida:   { label: 'Pendiente', clase: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+  vencida:   { label: 'Vencida',   clase: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  cancelada: { label: 'Incobrable', clase: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
+  borrador:  { label: 'Borrador',  clase: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
 }
 
 const TABS: { valor: TabFiltro; label: string }[] = [
@@ -95,7 +95,7 @@ function AccionesDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setAbierto(v => !v)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
         title="Acciones"
       >
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -104,13 +104,13 @@ function AccionesDropdown({
       </button>
 
       {abierto && (
-        <div className="absolute right-0 top-8 z-20 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-8 z-20 w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-1 shadow-lg">
           {/* Ver PDF */}
           <a
             href={`/api/facturas/${factura.id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             onClick={() => setAbierto(false)}
           >
             <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +124,7 @@ function AccionesDropdown({
           {factura.payment_link_url && cobrosActivos && (
             <button
               onClick={copiarLink}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -138,7 +138,7 @@ function AccionesDropdown({
           {(factura.estado === 'emitida' || factura.estado === 'vencida') && (
             <button
               onClick={() => { onReminder(factura); setAbierto(false) }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -146,7 +146,7 @@ function AccionesDropdown({
               </svg>
               Enviar recordatorio
               {(factura.reminders_sent ?? 0) > 0 && (
-                <span className="ml-auto rounded-full bg-orange-100 px-1.5 py-0.5 text-xs text-orange-600">
+                <span className="ml-auto rounded-full bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 text-xs text-orange-600 dark:text-orange-400">
                   {factura.reminders_sent}
                 </span>
               )}
@@ -157,10 +157,10 @@ function AccionesDropdown({
           {/* Marcar como cobrada */}
           {factura.estado !== 'pagada' && factura.estado !== 'cancelada' && (
             <>
-              <div className="my-1 border-t border-gray-100" />
+              <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
               <button
                 onClick={() => { onMarkPaid(factura); setAbierto(false) }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-green-700 hover:bg-green-50"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -194,32 +194,32 @@ function ModalRecordatorio({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onCerrar} />
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-        <div className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full ${esUrgente ? 'bg-red-100' : 'bg-orange-100'}`}>
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-xl">
+        <div className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full ${esUrgente ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/20'}`}>
           <svg className={`h-5 w-5 ${esUrgente ? 'text-red-600' : 'text-orange-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
         </div>
-        <h3 className="mt-3 text-center text-base font-semibold text-gray-900">
+        <h3 className="mt-3 text-center text-base font-semibold text-gray-900 dark:text-gray-100">
           {esUrgente ? 'Recordatorio urgente' : 'Enviar recordatorio'}
         </h3>
-        <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-          <p><span className="text-gray-400">Factura:</span> {factura.numero}</p>
-          <p><span className="text-gray-400">Cliente:</span> {factura.cliente_nombre}</p>
-          <p><span className="text-gray-400">Importe:</span> {formatCurrency(factura.total)}</p>
+        <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-900 p-3 text-sm text-gray-600 dark:text-gray-300">
+          <p><span className="text-gray-400 dark:text-gray-500">Factura:</span> {factura.numero}</p>
+          <p><span className="text-gray-400 dark:text-gray-500">Cliente:</span> {factura.cliente_nombre}</p>
+          <p><span className="text-gray-400 dark:text-gray-500">Importe:</span> {formatCurrency(factura.total)}</p>
           {factura.cliente_email ? (
-            <p><span className="text-gray-400">Email destino:</span> {factura.cliente_email}</p>
+            <p><span className="text-gray-400 dark:text-gray-500">Email destino:</span> {factura.cliente_email}</p>
           ) : (
             <p className="mt-1 text-orange-600 text-xs">⚠ El cliente no tiene email — se registrará el recordatorio pero no se enviará email.</p>
           )}
         </div>
-        <p className="mt-2 text-center text-xs text-gray-400">Recordatorio nº {siguiente}</p>
+        <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">Recordatorio nº {siguiente}</p>
         <div className="mt-4 flex gap-2">
           <button
             onClick={onCerrar}
             disabled={cargando}
-            className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="flex-1 rounded-lg border border-gray-200 dark:border-gray-600 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Cancelar
           </button>
@@ -295,14 +295,14 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
         accessorKey: 'cliente_nombre',
         header: 'Cliente',
         cell: ({ getValue }) => (
-          <span className="truncate text-sm text-gray-700">{getValue() as string}</span>
+          <span className="truncate text-sm text-gray-700 dark:text-gray-300">{getValue() as string}</span>
         ),
       },
       {
         accessorKey: 'fecha_emision',
         header: 'Fecha',
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-500">{formatDate(getValue() as string)}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(getValue() as string)}</span>
         ),
       },
       {
@@ -310,10 +310,10 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
         header: 'Vencimiento',
         cell: ({ getValue }) => {
           const v = getValue() as string | null
-          if (!v) return <span className="text-sm text-gray-300">—</span>
+          if (!v) return <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
           const esVencida = new Date(v) < new Date()
           return (
-            <span className={`text-sm ${esVencida ? 'font-medium text-red-600' : 'text-gray-500'}`}>
+            <span className={`text-sm ${esVencida ? 'font-medium text-red-600' : 'text-gray-500 dark:text-gray-400'}`}>
               {formatDate(v)}
             </span>
           )
@@ -323,7 +323,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
         accessorKey: 'total',
         header: () => <span className="block text-right">Importe</span>,
         cell: ({ getValue }) => (
-          <span className="block text-right text-sm font-semibold text-gray-900">
+          <span className="block text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
             {formatCurrency(getValue() as number)}
           </span>
         ),
@@ -333,7 +333,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
         header: 'Estado',
         cell: ({ row }) => {
           if (row.original.source === 'recurrente_base') {
-            return <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Recurrente</span>
+            return <span className="rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400">Recurrente</span>
           }
           const b = BADGE[row.original.estado] ?? BADGE.borrador
           return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.clase}`}>{b.label}</span>
@@ -358,7 +358,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
               </button>
               <button
                 onClick={() => setConfirmandoPagadaId(null)}
-                className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                className="rounded-lg border border-gray-200 dark:border-gray-600 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Cancelar
               </button>
@@ -432,13 +432,15 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
       {/* ── Filtros ── */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Tabs */}
-        <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+        <div className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-700">
           {TABS.map(({ valor, label }) => (
             <button
               key={valor}
               onClick={() => { setTab(valor); table.setPageIndex(0) }}
               className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                tab === valor ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                tab === valor
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
             >
               {label}
@@ -450,7 +452,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
         <select
           value={filtroCliente}
           onChange={e => { setFiltroCliente(e.target.value); table.setPageIndex(0) }}
-          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none"
+          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
         >
           <option value="">Todos los clientes</option>
           {clientes.map(c => <option key={c} value={c}>{c}</option>)}
@@ -461,7 +463,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
           type="date"
           value={fechaDesde}
           onChange={e => { setFechaDesde(e.target.value); table.setPageIndex(0) }}
-          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none"
+          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
           title="Desde"
         />
         <span className="text-xs text-gray-400">→</span>
@@ -469,7 +471,7 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
           type="date"
           value={fechaHasta}
           onChange={e => { setFechaHasta(e.target.value); table.setPageIndex(0) }}
-          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none"
+          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
           title="Hasta"
         />
 
@@ -483,36 +485,36 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
             placeholder="Buscar factura o cliente…"
             value={busqueda}
             onChange={e => { setBusqueda(e.target.value); table.setPageIndex(0) }}
-            className="h-8 w-52 rounded-lg border border-gray-200 bg-white pl-8 pr-3 text-xs text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+            className="h-8 w-52 rounded-lg border border-gray-200 bg-white pl-8 pr-3 text-xs text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
           />
         </div>
       </div>
 
       {/* ── Tabla ── */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50">
                 {table.getHeaderGroups().map(hg =>
                   hg.headers.map(header => (
-                    <th key={header.id} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <th key={header.id} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="py-10 text-center text-sm text-gray-400">
+                  <td colSpan={columns.length} className="py-10 text-center text-sm text-gray-400 dark:text-gray-500">
                     No hay facturas que coincidan con los filtros.
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map(row => (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     {row.getVisibleCells().map(cell => (
                       <td key={cell.id} className="px-4 py-3">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -527,22 +529,22 @@ export function TablaFacturasDashboard({ facturas: facturasProp, cobrosActivos }
 
         {/* ── Paginación ── */}
         {totalPaginas > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-            <p className="text-xs text-gray-400">
+          <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, facturasFiltradas.length)} de {facturasFiltradas.length}
             </p>
             <div className="flex gap-1">
               <button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
               >
                 ← Anterior
               </button>
               <button
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                className="rounded-lg border border-gray-200 dark:border-gray-600 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40"
               >
                 Siguiente →
               </button>

@@ -54,15 +54,15 @@ export async function POST(
   }
 
   // ── 4. Actualizar la BD ──────────────────────────────────────────────────────
-  // Mantenemos stripe_customer_id por si se reactiva en el futuro
+  // NO borrar stripe_subscription_id aquí: Stripe puede cobrar un ciclo más
+  // (cancel_at_period_end=true) y el webhook invoice.payment_succeeded necesita
+  // encontrar la recurrente por stripe_subscription_id para generar la factura.
+  // La limpieza final (stripe_subscription_id=null, cobro_automatico=false) la
+  // hace el bloque customer.subscription.deleted del webhook Connect.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (adminSupabase.from('facturas_recurrentes') as any)
     .update({
-      cobro_automatico:      false,
-      cobro_status:          'manual',
-      stripe_subscription_id: null,
-      stripe_price_id:        null,
-      setup_url:              null,
+      cobro_status: 'canceling',
     })
     .eq('id', id)
     .eq('user_id', user.id)

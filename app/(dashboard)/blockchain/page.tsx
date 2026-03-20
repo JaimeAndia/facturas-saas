@@ -24,7 +24,7 @@ export default async function BlockchainPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawEventos } = await (adminSupabase as any)
     .from('blockchain_events')
-    .select('id, created_at, event_type, tx_hash, tx_status, ledger, factura_numero, factura_total, cliente_nombre, factura_id')
+    .select('id, created_at, event_type, tx_hash, tx_status, ledger, factura_numero, factura_total, cliente_nombre, factura_id, attempts, error_message')
     .eq('user_id', user!.id)
     .order('created_at', { ascending: true }) as { data: BlockchainEvento[] | null }
 
@@ -75,45 +75,45 @@ export default async function BlockchainPage({
 
       {/* ── Cabecera ── */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Registro blockchain</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Registro blockchain</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Eventos de tus facturas registrados en el XRP Ledger como prueba de autenticidad.
         </p>
       </div>
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-xs font-medium text-gray-500">Total eventos</p>
-          <p className="mt-1 text-3xl font-bold text-gray-900">{totalEventos}</p>
-          <p className="mt-1 text-xs text-gray-400">registros en blockchain</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Total eventos</p>
+          <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{totalEventos}</p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">registros en blockchain</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <p className="text-xs font-medium text-blue-600">Este mes</p>
-          <p className="mt-1 text-3xl font-bold text-blue-700">{eventosMes}</p>
-          <p className="mt-1 text-xs text-blue-500">
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-900/20">
+          <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Este mes</p>
+          <p className="mt-1 text-3xl font-bold text-blue-700 dark:text-blue-400">{eventosMes}</p>
+          <p className="mt-1 text-xs text-blue-500 dark:text-blue-400">
             {ahora.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div className="rounded-xl border border-violet-100 bg-violet-50 p-5">
-          <p className="text-xs font-medium text-violet-600">Facturas únicas</p>
-          <p className="mt-1 text-3xl font-bold text-violet-700">{facturasUnicas}</p>
-          <p className="mt-1 text-xs text-violet-500">con al menos un evento</p>
+        <div className="rounded-xl border border-violet-100 bg-violet-50 p-5 dark:border-violet-900/50 dark:bg-violet-900/20">
+          <p className="text-xs font-medium text-violet-600 dark:text-violet-400">Facturas únicas</p>
+          <p className="mt-1 text-3xl font-bold text-violet-700 dark:text-violet-400">{facturasUnicas}</p>
+          <p className="mt-1 text-xs text-violet-500 dark:text-violet-400">con al menos un evento</p>
         </div>
       </div>
 
       {/* ── Listado de facturas desplegables ── */}
       {gruposOrdenados.length === 0 ? (
 
-        <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-            <svg className="h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+            <svg className="h-7 w-7 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <p className="mt-4 text-sm font-semibold text-gray-900">Sin registros blockchain</p>
-          <p className="mt-2 mx-auto max-w-sm text-sm text-gray-500">
+          <p className="mt-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Sin registros blockchain</p>
+          <p className="mt-2 mx-auto max-w-sm text-sm text-gray-500 dark:text-gray-400">
             Aún no hay registros. Los eventos se registran automáticamente
             cuando emites, cobras o cancelas una factura.
           </p>
@@ -131,7 +131,7 @@ export default async function BlockchainPage({
       ) : (
 
         <div className="space-y-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             {facturasUnicas} factura{facturasUnicas !== 1 ? 's' : ''} · haz clic en cada tarjeta para ver sus transacciones
           </p>
 

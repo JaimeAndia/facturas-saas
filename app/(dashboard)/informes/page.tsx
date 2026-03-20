@@ -29,7 +29,7 @@ export default async function InformesPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-gray-900">Informes trimestrales</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Informes trimestrales</h1>
       <InformeTrimestral facturas={facturas} />
     </div>
   )

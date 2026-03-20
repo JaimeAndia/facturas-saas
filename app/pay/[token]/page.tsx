@@ -83,24 +83,24 @@ export default async function PaginaPago({ params }: PageProps) {
           </div>
         )}
         <div>
-          <p className="text-lg font-bold text-gray-900">{nombreEmisor}</p>
-          {emisor?.nif && <p className="text-sm text-gray-500">NIF: {emisor.nif}</p>}
-          {emisor?.ciudad && <p className="text-sm text-gray-400">{emisor.ciudad}</p>}
+          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{nombreEmisor}</p>
+          {emisor?.nif && <p className="text-sm text-gray-500 dark:text-gray-400">NIF: {emisor.nif}</p>}
+          {emisor?.ciudad && <p className="text-sm text-gray-400 dark:text-gray-500">{emisor.ciudad}</p>}
         </div>
       </div>
 
       {/* Tarjeta principal */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         {/* Título de la factura */}
-        <div className="border-b border-gray-100 bg-gray-50 px-6 py-4">
+        <div className="border-b border-gray-100 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Factura</p>
-              <p className="mt-0.5 text-2xl font-bold text-gray-900">{factura.numero}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Factura</p>
+              <p className="mt-0.5 text-2xl font-bold text-gray-900 dark:text-gray-100">{factura.numero}</p>
             </div>
             <div className="text-right">
               {yaPagada ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -111,40 +111,40 @@ export default async function PaginaPago({ params }: PageProps) {
                   Pendiente de pago
                 </span>
               )}
-              <p className="mt-1.5 text-xs text-gray-400">Emitida el {fmtFecha(factura.fecha_emision)}</p>
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Emitida el {fmtFecha(factura.fecha_emision)}</p>
               {factura.fecha_vencimiento && (
-                <p className="text-xs text-gray-400">Vence el {fmtFecha(factura.fecha_vencimiento)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Vence el {fmtFecha(factura.fecha_vencimiento)}</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Datos del cliente */}
-        <div className="border-b border-gray-100 px-6 py-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Facturado a</p>
-          <p className="font-semibold text-gray-900">{cliente?.nombre}</p>
-          {cliente?.nif && <p className="text-sm text-gray-500">NIF: {cliente.nif}</p>}
-          {cliente?.email && <p className="text-sm text-gray-500">{cliente.email}</p>}
+        <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Facturado a</p>
+          <p className="font-semibold text-gray-900 dark:text-gray-100">{cliente?.nombre}</p>
+          {cliente?.nif && <p className="text-sm text-gray-500 dark:text-gray-400">NIF: {cliente.nif}</p>}
+          {cliente?.email && <p className="text-sm text-gray-500 dark:text-gray-400">{cliente.email}</p>}
         </div>
 
         {/* Líneas de la factura */}
         <div className="px-6 py-4">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <tr className="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500">
                 <th className="pb-2 pr-4">Concepto</th>
                 <th className="pb-2 pr-4 text-right">Cant.</th>
                 <th className="pb-2 pr-4 text-right">Precio</th>
                 <th className="pb-2 text-right">Subtotal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
               {(lineas ?? []).map((linea: { descripcion: string; cantidad: number; precio_unitario: number; subtotal: number }, i: number) => (
                 <tr key={i}>
-                  <td className="py-2.5 pr-4 text-gray-900">{linea.descripcion}</td>
-                  <td className="py-2.5 pr-4 text-right text-gray-500">{linea.cantidad}</td>
-                  <td className="py-2.5 pr-4 text-right text-gray-500">{fmt(linea.precio_unitario)}</td>
-                  <td className="py-2.5 text-right font-medium text-gray-900">{fmt(linea.subtotal)}</td>
+                  <td className="py-2.5 pr-4 text-gray-900 dark:text-gray-100">{linea.descripcion}</td>
+                  <td className="py-2.5 pr-4 text-right text-gray-500 dark:text-gray-400">{linea.cantidad}</td>
+                  <td className="py-2.5 pr-4 text-right text-gray-500 dark:text-gray-400">{fmt(linea.precio_unitario)}</td>
+                  <td className="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{fmt(linea.subtotal)}</td>
                 </tr>
               ))}
             </tbody>
@@ -152,65 +152,65 @@ export default async function PaginaPago({ params }: PageProps) {
         </div>
 
         {/* Totales */}
-        <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
+        <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="ml-auto max-w-xs space-y-1.5">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Base imponible</span>
-              <span className="text-gray-900">{fmt(factura.base_imponible)}</span>
+              <span className="text-gray-500 dark:text-gray-400">Base imponible</span>
+              <span className="text-gray-900 dark:text-gray-100">{fmt(factura.base_imponible)}</span>
             </div>
             {factura.iva_porcentaje > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">IVA ({factura.iva_porcentaje}%)</span>
-                <span className="text-gray-900">+ {fmt(factura.iva_importe)}</span>
+                <span className="text-gray-500 dark:text-gray-400">IVA ({factura.iva_porcentaje}%)</span>
+                <span className="text-gray-900 dark:text-gray-100">+ {fmt(factura.iva_importe)}</span>
               </div>
             )}
             {factura.irpf_porcentaje > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">IRPF ({factura.irpf_porcentaje}%)</span>
-                <span className="text-red-600">− {fmt(factura.irpf_importe)}</span>
+                <span className="text-gray-500 dark:text-gray-400">IRPF ({factura.irpf_porcentaje}%)</span>
+                <span className="text-red-600 dark:text-red-400">− {fmt(factura.irpf_importe)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t border-gray-200 pt-2">
-              <span className="text-base font-bold text-gray-900">Total a pagar</span>
-              <span className="text-xl font-bold text-blue-600">{fmt(factura.total)}</span>
+            <div className="flex justify-between border-t border-gray-200 pt-2 dark:border-gray-700">
+              <span className="text-base font-bold text-gray-900 dark:text-gray-100">Total a pagar</span>
+              <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{fmt(factura.total)}</span>
             </div>
           </div>
         </div>
 
         {/* Notas */}
         {factura.notas && (
-          <div className="border-t border-gray-100 px-6 py-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Notas</p>
-            <p className="whitespace-pre-line text-sm text-gray-600">{factura.notas}</p>
+          <div className="border-t border-gray-100 px-6 py-4 dark:border-gray-700">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Notas</p>
+            <p className="whitespace-pre-line text-sm text-gray-600 dark:text-gray-400">{factura.notas}</p>
           </div>
         )}
 
         {/* Transferencia bancaria */}
         {!yaPagada && emisor?.iban && (
-          <div className="border-t border-gray-100 bg-blue-50 px-6 py-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500">Pago por transferencia bancaria</p>
-            <p className="font-mono text-sm font-semibold text-gray-900">{emisor.iban}</p>
-            <p className="mt-1 text-xs text-gray-500">Indique <strong>{factura.numero}</strong> en el concepto de la transferencia.</p>
+          <div className="border-t border-gray-100 bg-blue-50 px-6 py-4 dark:border-gray-700 dark:bg-blue-900/20">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-400">Pago por transferencia bancaria</p>
+            <p className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">{emisor.iban}</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Indique <strong>{factura.numero}</strong> en el concepto de la transferencia.</p>
           </div>
         )}
 
         {/* Botón de pago */}
         {!yaPagada && (
-          <div className="border-t border-gray-100 px-6 py-5">
+          <div className="border-t border-gray-100 px-6 py-5 dark:border-gray-700">
             <PayButton token={token} total={factura.total} />
           </div>
         )}
 
         {/* Mensaje si ya está pagada */}
         {yaPagada && (
-          <div className="border-t border-gray-100 px-6 py-5">
-            <div className="flex items-center gap-3 rounded-xl bg-green-50 p-4 text-green-800">
-              <svg className="h-6 w-6 shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="border-t border-gray-100 px-6 py-5 dark:border-gray-700">
+            <div className="flex items-center gap-3 rounded-xl bg-green-50 p-4 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <svg className="h-6 w-6 shrink-0 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
                 <p className="font-semibold">Esta factura ya ha sido pagada</p>
-                <p className="text-sm text-green-700">No es necesario realizar ningún pago adicional.</p>
+                <p className="text-sm text-green-700 dark:text-green-400">No es necesario realizar ningún pago adicional.</p>
               </div>
             </div>
           </div>
@@ -237,7 +237,7 @@ export default async function PaginaPago({ params }: PageProps) {
       )}
 
       {/* Footer */}
-      <p className="mt-6 text-center text-xs text-gray-400">
+      <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
         Si tienes alguna duda, contacta con {nombreEmisor}
         {emisor?.email ? ` en ${emisor.email}` : ''}.
       </p>

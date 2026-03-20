@@ -50,17 +50,17 @@ export function Modal({ abierto, onCerrar, titulo, children, className }: ModalP
       {/* Panel centrado */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl',
+          'relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800',
           className
         )}
       >
         {titulo && (
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 className="text-base font-semibold text-gray-900">{titulo}</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{titulo}</h2>
             <button
               onClick={onCerrar}
               aria-label="Cerrar"
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

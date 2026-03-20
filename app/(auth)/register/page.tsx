@@ -43,9 +43,9 @@ export default async function RegisterPage({ searchParams }: PageProps) {
   const errorMensaje = params.error
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-      <h1 className="mb-1 text-xl font-bold text-gray-900">Crear cuenta</h1>
-      <p className="mb-6 text-sm text-gray-500">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-sm">
+      <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-gray-100">Crear cuenta</h1>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         ¿Ya tienes cuenta?{' '}
         <Link href="/login" className="font-medium text-blue-600 hover:underline">
           Inicia sesión
@@ -53,14 +53,14 @@ export default async function RegisterPage({ searchParams }: PageProps) {
       </p>
 
       {errorMensaje && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600">
           {decodeURIComponent(errorMensaje)}
         </div>
       )}
 
       <form action={registerAction} className="space-y-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="nombre" className="text-sm font-medium text-gray-700">
+          <label htmlFor="nombre" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Nombre
           </label>
           <input
@@ -75,7 +75,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Email
           </label>
           <input
@@ -90,7 +90,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Contraseña
           </label>
           <input
@@ -112,7 +112,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           Crear cuenta gratis
         </button>
 
-        <p className="text-center text-xs text-gray-400">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
           Al registrarte aceptas nuestros{' '}
           <a href="/terminos" className="underline hover:text-gray-600">términos de servicio</a>
         </p>

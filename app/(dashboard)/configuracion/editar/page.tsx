@@ -24,15 +24,15 @@ export default async function EditarPerfilPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <a href="/configuracion" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+        <a href="/configuracion" className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </a>
-        <h1 className="text-xl font-bold text-gray-900">Editar datos</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Editar datos</h1>
       </div>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
         <FormularioPerfil perfil={perfil} />
       </section>
     </div>

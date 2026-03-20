@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { Modal } from '@/components/ui/Modal'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { useSubscription } from '@/hooks/useSubscription'
 import Link from 'next/link'
@@ -85,10 +86,10 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
     <div ref={contenedorRef} className="relative">
       {/* Input principal */}
       <div
-        className={`flex h-10 w-full items-center gap-2 rounded-lg border bg-white px-3 text-sm transition-colors focus-within:ring-2 focus-within:ring-blue-500/20 ${
+        className={`flex h-10 w-full items-center gap-2 rounded-lg border bg-white dark:bg-gray-800 px-3 text-sm transition-colors focus-within:ring-2 focus-within:ring-blue-500/20 ${
           error
             ? 'border-red-400 focus-within:border-red-400'
-            : 'border-gray-300 focus-within:border-blue-500'
+            : 'border-gray-300 dark:border-gray-600 focus-within:border-blue-500'
         }`}
         onClick={() => { if (!abierto) setAbierto(true) }}
       >
@@ -100,10 +101,10 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
 
         {clienteActual && !abierto ? (
           /* Cliente seleccionado — solo lectura hasta que se abra */
-          <span className="flex-1 truncate text-gray-900">
+          <span className="flex-1 truncate text-gray-900 dark:text-gray-100">
             {clienteActual.nombre}
             {clienteActual.nif && (
-              <span className="ml-1.5 text-gray-400">{clienteActual.nif}</span>
+              <span className="ml-1.5 text-gray-400 dark:text-gray-500">{clienteActual.nif}</span>
             )}
           </span>
         ) : (
@@ -114,7 +115,7 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
             value={busqueda}
             onChange={(e) => { setBusqueda(e.target.value); setAbierto(true) }}
             onFocus={() => setAbierto(true)}
-            className="flex-1 bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
           />
         )}
 
@@ -123,7 +124,7 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
           <button
             type="button"
             onClick={limpiar}
-            className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+            className="rounded p-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             title="Quitar cliente"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,9 +136,9 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
 
       {/* Dropdown */}
       {abierto && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
           {filtrados.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-gray-400">
+            <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
               {busqueda ? `Sin resultados para "${busqueda}"` : 'Sin clientes'}
             </p>
           ) : (
@@ -147,12 +148,12 @@ function SelectorCliente({ clientes, value, onChange, error }: SelectorClientePr
                   <button
                     type="button"
                     onClick={() => seleccionar(c)}
-                    className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-50 ${
-                      c.id === value ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-900'
+                    className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-50 dark:hover:bg-gray-700 ${
+                      c.id === value ? 'bg-blue-50 dark:bg-gray-700 font-medium text-blue-700' : 'text-gray-900 dark:text-gray-100'
                     }`}
                   >
                     <span>{c.nombre}</span>
-                    {c.nif && <span className="ml-3 text-xs text-gray-400">{c.nif}</span>}
+                    {c.nif && <span className="ml-3 text-xs text-gray-400 dark:text-gray-500">{c.nif}</span>}
                   </button>
                 </li>
               ))}
@@ -206,6 +207,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
   const [lineas, setLineas] = useState<LineaFormulario[]>([crearLineaVacia(0)])
   const [errores, setErrores] = useState<ErroresForm>({})
   const [errorServidor, setErrorServidor] = useState<string | null>(null)
+  const [modalNif, setModalNif] = useState(false)
 
   // Cálculos en tiempo real
   const subtotales = lineas.map((l) =>
@@ -299,7 +301,11 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       if (resultado.ok && resultado.datos) {
         router.push(`/facturas/${resultado.datos.id}`)
       } else if (!resultado.ok) {
-        setErrorServidor(resultado.error)
+        if ('redirect' in resultado && resultado.redirect === '/configuracion/editar') {
+          setModalNif(true)
+        } else {
+          setErrorServidor(resultado.error)
+        }
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,6 +313,42 @@ export function FormFactura({ clientes }: FormFacturaProps) {
 
   return (
     <div className="space-y-6">
+      {/* Modal: NIF obligatorio para emitir */}
+      <Modal
+        abierto={modalNif}
+        onCerrar={() => setModalNif(false)}
+        titulo="NIF obligatorio para emitir facturas"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-lg bg-amber-50 p-4">
+            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <p className="text-sm text-amber-800">
+              Tu NIF/CIF aparece en todas tus facturas y es obligatorio por la normativa fiscal española. Sin él no puedes emitir facturas.
+            </p>
+          </div>
+          <p className="text-sm text-gray-600">
+            Ve a <strong>Configuración → Perfil</strong> y añade tu NIF. Podrás volver aquí a terminar la factura.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variante="secundario"
+              onClick={() => setModalNif(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => router.push('/configuracion/editar')}
+              className="flex-1"
+            >
+              Ir a Configuración
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {errorServidor && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {errorServidor}
@@ -314,12 +356,12 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       )}
 
       {/* Cabecera: cliente + fechas */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Datos principales</h2>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Datos principales</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Selector de cliente con búsqueda */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Cliente <span className="text-red-500">*</span>
             </label>
             <SelectorCliente
@@ -361,8 +403,8 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       </div>
 
       {/* Líneas de factura */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Líneas de factura</h2>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Líneas de factura</h2>
 
         {errores.lineas && (
           <p className="mb-3 text-xs text-red-500">{errores.lineas}</p>
@@ -370,7 +412,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
 
         <div className="space-y-3">
           {/* Cabecera columnas — desktop */}
-          <div className="hidden grid-cols-[1fr_80px_110px_90px_32px] gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400 md:grid">
+          <div className="hidden grid-cols-[1fr_80px_110px_90px_32px] gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 md:grid">
             <span>Descripción</span>
             <span>Cantidad</span>
             <span>Precio unit.</span>
@@ -383,7 +425,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
             const errLinea = errores.lineasDetalle?.[linea._id]
             return (
               <div key={linea._id}
-                className="grid grid-cols-1 gap-2 rounded-lg border border-gray-100 p-3 md:grid-cols-[1fr_80px_110px_90px_32px] md:items-start md:border-0 md:p-0">
+                className="grid grid-cols-1 gap-2 rounded-lg border border-gray-100 dark:border-gray-700 p-3 md:grid-cols-[1fr_80px_110px_90px_32px] md:items-start md:border-0 md:p-0">
                 {/* Descripción */}
                 <div>
                   <input
@@ -391,8 +433,8 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     placeholder="Descripción del servicio o producto"
                     value={linea.descripcion}
                     onChange={(e) => actualizarLinea(linea._id, 'descripcion', e.target.value)}
-                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                      errLinea?.descripcion ? 'border-red-400' : 'border-gray-300'
+                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                      errLinea?.descripcion ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   {errLinea?.descripcion && <p className="mt-0.5 text-xs text-red-500">{errLinea.descripcion}</p>}
@@ -407,8 +449,8 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     placeholder="1"
                     value={linea.cantidad || ''}
                     onChange={(e) => actualizarLinea(linea._id, 'cantidad', e.target.value)}
-                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                      errLinea?.cantidad ? 'border-red-400' : 'border-gray-300'
+                    className={`h-10 w-full rounded-lg border px-3 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                      errLinea?.cantidad ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   {errLinea?.cantidad && <p className="mt-0.5 text-xs text-red-500">{errLinea.cantidad}</p>}
@@ -424,17 +466,17 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                       placeholder="0,00"
                       value={linea.precioUnitario || ''}
                       onChange={(e) => actualizarLinea(linea._id, 'precioUnitario', e.target.value)}
-                      className={`h-10 w-full rounded-lg border py-2 pl-3 pr-7 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                        errLinea?.precio ? 'border-red-400' : 'border-gray-300'
+                      className={`h-10 w-full rounded-lg border py-2 pl-3 pr-7 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                        errLinea?.precio ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
                       }`}
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">€</span>
                   </div>
                   {errLinea?.precio && <p className="mt-0.5 text-xs text-red-500">{errLinea.precio}</p>}
                 </div>
 
                 {/* Subtotal calculado */}
-                <div className="flex h-10 items-center justify-end text-sm font-medium text-gray-900">
+                <div className="flex h-10 items-center justify-end text-sm font-medium text-gray-900 dark:text-gray-100">
                   {formatCurrency(subtotal)}
                 </div>
 
@@ -462,7 +504,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
         <button
           type="button"
           onClick={agregarLinea}
-          className="mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600"
+          className="mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -472,15 +514,15 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       </div>
 
       {/* IVA + IRPF + Totales */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Selectores fiscales */}
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-gray-900">Impuestos</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Impuestos</h2>
 
             {/* IVA */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-gray-700">IVA</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">IVA</label>
               <div className="flex flex-wrap gap-2">
                 {IVA_OPCIONES.map(({ valor, etiqueta }) => (
                   <button
@@ -490,7 +532,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                       ivaPorcentaje === valor
                         ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-gray-300 text-gray-700 hover:border-blue-400'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
                     }`}
                   >
                     {etiqueta}
@@ -501,7 +543,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
 
             {/* IRPF */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-gray-700">IRPF (retención)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">IRPF (retención)</label>
               <div className="flex flex-wrap gap-2">
                 {IRPF_OPCIONES.map((p) => (
                   <button
@@ -511,7 +553,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
                     className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                       irpfPorcentaje === p
                         ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-gray-300 text-gray-700 hover:border-blue-400'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
                     }`}
                   >
                     {p === 0 ? 'Sin retención' : `${p}%`}
@@ -523,27 +565,27 @@ export function FormFactura({ clientes }: FormFacturaProps) {
 
           {/* Resumen de totales */}
           <div>
-            <h2 className="mb-4 text-sm font-semibold text-gray-900">Resumen</h2>
-            <div className="space-y-2 rounded-lg bg-gray-50 p-4">
+            <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen</h2>
+            <div className="space-y-2 rounded-lg bg-gray-50 dark:bg-gray-900 p-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Base imponible</span>
-                <span className="font-medium text-gray-900">{formatCurrency(baseImponible)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Base imponible</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(baseImponible)}</span>
               </div>
               {ivaPorcentaje > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">IVA ({ivaPorcentaje}%)</span>
-                  <span className="font-medium text-gray-900">+ {formatCurrency(ivaImporte)}</span>
+                  <span className="text-gray-600 dark:text-gray-400">IVA ({ivaPorcentaje}%)</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">+ {formatCurrency(ivaImporte)}</span>
                 </div>
               )}
               {irpfPorcentaje > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">IRPF ({irpfPorcentaje}%)</span>
+                  <span className="text-gray-600 dark:text-gray-400">IRPF ({irpfPorcentaje}%)</span>
                   <span className="font-medium text-red-600">− {formatCurrency(irpfImporte)}</span>
                 </div>
               )}
-              <div className="border-t border-gray-200 pt-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                 <div className="flex justify-between">
-                  <span className="text-base font-bold text-gray-900">Total</span>
+                  <span className="text-base font-bold text-gray-900 dark:text-gray-100">Total</span>
                   <span className="text-xl font-bold text-blue-600">{formatCurrency(total)}</span>
                 </div>
               </div>
@@ -553,7 +595,7 @@ export function FormFactura({ clientes }: FormFacturaProps) {
       </div>
 
       {/* Notas */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
         <Textarea
           label="Notas"
           value={notas}

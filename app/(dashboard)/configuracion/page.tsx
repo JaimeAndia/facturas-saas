@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { SeccionStripeConnect } from '@/components/configuracion/SeccionStripeConnect'
 import { SeccionSuscripcion } from '@/components/configuracion/SeccionSuscripcion'
 import { SeccionIdentidadDigital } from '@/components/configuracion/SeccionIdentidadDigital'
+import { SeccionApariencia } from './editar/SeccionApariencia'
 
 export const metadata: Metadata = {
   title: 'Configuración — FacturX',
@@ -29,7 +30,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
 
   if (error || !perfil) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+      <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600">
         Error al cargar el perfil.
       </div>
     )
@@ -39,11 +40,11 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Configuración</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Configuración</h1>
 
       {/* Datos personales */}
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Datos del autónomo</h2>
+      <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+        <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Datos del autónomo</h2>
         <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
           {[
             { etiqueta: 'Nombre', valor: perfil.nombre },
@@ -58,15 +59,15 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
             { etiqueta: 'IBAN', valor: (perfil as unknown as { iban: string | null }).iban },
           ].map(({ etiqueta, valor }) => (
             <div key={etiqueta} className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium text-gray-400">{etiqueta}</dt>
-              <dd className="text-gray-900">{valor ?? '—'}</dd>
+              <dt className="text-xs font-medium text-gray-400 dark:text-gray-500">{etiqueta}</dt>
+              <dd className="text-gray-900 dark:text-gray-100">{valor ?? '—'}</dd>
             </div>
           ))}
         </dl>
-        <div className="mt-4 border-t pt-4">
+        <div className="mt-4 border-t dark:border-gray-700 pt-4">
           <a
             href="/configuracion/editar"
-            className="inline-flex h-8 items-center rounded-lg border border-gray-300 px-3 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex h-8 items-center rounded-lg border border-gray-300 dark:border-gray-600 px-3 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Editar datos
           </a>
@@ -92,6 +93,9 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
         planStatus={perfil.plan_status ?? null}
         tieneStripeCustomer={!!perfil.stripe_customer_id}
       />
+
+      {/* Apariencia */}
+      <SeccionApariencia />
     </div>
   )
 }

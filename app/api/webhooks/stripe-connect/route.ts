@@ -11,7 +11,9 @@ import { recordXrplEvent } from '@/lib/xrpl-events'
 import { settlePayment } from '@/lib/xrpl-settlement'
 import { FacturaPDF } from '@/components/facturas/FacturaPDF'
 import { FacturaEmail } from '@/emails/FacturaEmail'
-import { formatDate } from '@/lib/utils'
+import { CobroFallidoEmail } from '@/emails/CobroFallidoEmail'
+import { CobroRecibidoEmail } from '@/emails/CobroRecibidoEmail'
+import { formatDate, calcularProximaFecha } from '@/lib/utils'
 import type Stripe from 'stripe'
 import type { LineaFactura, Cliente } from '@/types'
 
@@ -100,14 +102,16 @@ export async function POST(request: Request) {
           // Obtener user_id + datos XRPL del perfil
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: facturaRow } = await (supabase.from('facturas') as any)
-            .select('user_id, total, blockchain_hash, profiles!facturas_user_id_fkey(plan, xrpl_addon, xrpl_address)')
+            .select('user_id, total, numero, blockchain_hash, clientes(nombre), profiles!facturas_user_id_fkey(plan, xrpl_addon, xrpl_address, email)')
             .eq('id', invoiceId)
             .single() as {
               data: {
                 user_id: string
                 total: number
+                numero: string
                 blockchain_hash: string | null
-                profiles: { plan: string; xrpl_addon: boolean | null; xrpl_address: string | null } | null
+                clientes: { nombre: string } | null
+                profiles: { plan: string; xrpl_addon: boolean | null; xrpl_address: string | null; email: string | null } | null
               } | null
             }
 
@@ -159,6 +163,30 @@ export async function POST(request: Request) {
             }
 
           }
+
+          // Notificación al autónomo: cobro recibido (fire-and-forget)
+          const emailAutonomo = facturaRow?.profiles?.email
+          if (emailAutonomo && facturaRow) {
+            const nombreCliente = facturaRow.clientes?.nombre ?? 'Tu cliente'
+            const importe = `${facturaRow.total.toFixed(2).replace('.', ',')}€`
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://facturx.es'
+            render(
+              createElement(CobroRecibidoEmail, {
+                nombreCliente,
+                numeroFactura: facturaRow.numero,
+                importe,
+                urlFactura: `${appUrl}/facturas/${invoiceId}`,
+              })
+            ).then((html) =>
+              getResend().emails.send({
+                from:    process.env.RESEND_FROM ?? 'FacturX <noreply@facturx.es>',
+                to:      emailAutonomo,
+                subject: `✅ ${nombreCliente} ha pagado ${importe}`,
+                html,
+              })
+            ).catch(() => {})
+          }
+
           break
         }
 
@@ -314,7 +342,10 @@ export async function POST(request: Request) {
                 .eq('id', prePagada.id)
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               await (supabase.from('facturas_recurrentes') as any)
-                .update({ ultima_generacion: new Date().toISOString() })
+                .update({
+                  ultima_generacion: new Date().toISOString(),
+                  proxima_fecha: calcularProximaFecha(new Date(), recurrente.frecuencia),
+                })
                 .eq('id', recurrente.id)
               console.log(`[Connect] Primera factura ya pagada por activar-cobro — enlazando ${inv.id}`)
               break
@@ -378,7 +409,10 @@ export async function POST(request: Request) {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('facturas_recurrentes') as any)
-          .update({ ultima_generacion: new Date().toISOString() })
+          .update({
+            ultima_generacion: new Date().toISOString(),
+            proxima_fecha: calcularProximaFecha(new Date(), recurrente.frecuencia),
+          })
           .eq('id', recurrente.id)
 
         // Líneas para el PDF/email — siempre las de la factura base
@@ -520,7 +554,7 @@ export async function POST(request: Request) {
           .select(`
             id, user_id,
             profiles!inner ( email, nombre, apellidos ),
-            facturas!factura_base_id ( clientes ( nombre ) )
+            facturas!factura_base_id ( total, clientes ( nombre, email ) )
           `)
           .eq('stripe_subscription_id', stripeSubscriptionId)
           .single() as {
@@ -528,12 +562,14 @@ export async function POST(request: Request) {
               id: string
               user_id: string
               profiles: { email: string; nombre: string; apellidos: string }
-              facturas: { clientes: { nombre: string } | null }
+              facturas: { total: number; clientes: { nombre: string; email: string | null } | null }
             } | null
           }
 
         if (recurrente?.profiles?.email) {
           const nombreCliente  = recurrente.facturas?.clientes?.nombre ?? 'tu cliente'
+          const emailCliente   = recurrente.facturas?.clientes?.email ?? ''
+          const importe        = `${(recurrente.facturas?.total ?? 0).toFixed(2).replace('.', ',')}€`
           const nombreAutonomo = [recurrente.profiles.nombre, recurrente.profiles.apellidos]
             .filter(Boolean).join(' ') || 'usuario'
 
@@ -541,7 +577,25 @@ export async function POST(request: Request) {
             `[Connect] Pago fallido — autónomo: ${nombreAutonomo}` +
             ` — cliente: ${nombreCliente} — suscripción: ${stripeSubscriptionId}`
           )
-          // TODO: enviar email de aviso al autónomo vía Resend
+
+          // Email de aviso al autónomo (fire-and-forget)
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://facturx.es'
+          getResend().emails.send({
+            from:    process.env.RESEND_FROM ?? 'FacturX <noreply@facturx.es>',
+            to:      recurrente.profiles.email,
+            subject: `⚠️ Cobro fallido — ${nombreCliente}`,
+            html: await render(
+              createElement(CobroFallidoEmail, {
+                nombreCliente,
+                emailCliente,
+                recurrenteId: recurrente.id,
+                importe,
+                appUrl,
+              })
+            ),
+          }).catch((err: unknown) => {
+            console.error('[Connect] Error enviando email cobro fallido:', err)
+          })
 
           // XRPL: subscription_failed (fire-and-forget)
           recordXrplEvent({
@@ -564,6 +618,7 @@ export async function POST(request: Request) {
             cobro_automatico:       false,
             cobro_status:           'canceled',
             stripe_subscription_id: null,
+            stripe_customer_id:     null,
           })
           .eq('stripe_subscription_id', sub.id)
           .select('user_id')

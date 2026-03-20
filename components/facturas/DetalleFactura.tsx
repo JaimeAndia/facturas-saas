@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Toast, type TipoToast } from '@/components/ui/Toast'
 import {
   actualizarEstadoFactura,
+  crearFacturaRectificativa,
   duplicarFactura,
   eliminarFactura,
 } from '@/app/(dashboard)/facturas/actions'
@@ -37,6 +38,7 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ mensaje: string; tipo: TipoToast } | null>(null)
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false)
+  const [confirmandoAbono, setConfirmandoAbono] = useState(false)
   const [paymentLinkUrl, setPaymentLinkUrl] = useState<string | null>(factura.payment_link_url ?? null)
   const [generandoLink, setGenerandoLink] = useState(false)
   const [linkVisible, setLinkVisible] = useState(false)
@@ -57,6 +59,9 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
         router.refresh()
       } else {
         mostrarToast(resultado.error, 'error')
+        if ('redirect' in resultado && resultado.redirect) {
+          router.push(resultado.redirect)
+        }
       }
     })
   }
@@ -118,6 +123,19 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
     setTimeout(() => setCopiado(false), 2000)
   }
 
+  function handleEmitirAbono() {
+    startTransition(async () => {
+      const resultado = await crearFacturaRectificativa(factura.id)
+      if (resultado.ok && resultado.datos) {
+        mostrarToast(`Abono ${resultado.datos.numero} creado`, 'exito')
+        router.push(`/facturas/${resultado.datos.id}`)
+      } else if (!resultado.ok) {
+        mostrarToast(resultado.error, 'error')
+        setConfirmandoAbono(false)
+      }
+    })
+  }
+
   function handleEnviarEmail() {
     startTransition(async () => {
       const res = await fetch(`/api/facturas/${factura.id}/enviar`, { method: 'POST' })
@@ -151,16 +169,13 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
         </Link>
 
         {/* Cambiar estado */}
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5">
-          <span className="text-xs text-gray-500">Estado:</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_ESTADO[factura.estado] ?? ''}`}>
-            {ESTADOS_CAMBIO.find(e => e.valor === factura.estado)?.etiqueta ?? factura.estado}
-          </span>
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Estado:</span>
           <select
             value={factura.estado}
             onChange={(e) => handleCambiarEstado(e.target.value)}
             disabled={isPending}
-            className="border-0 bg-transparent text-xs text-gray-500 focus:outline-none focus:ring-0 cursor-pointer"
+            className="border-0 bg-transparent text-xs text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0 cursor-pointer dark:bg-gray-800"
           >
             {ESTADOS_CAMBIO.map((e) => (
               <option key={e.valor} value={e.valor}>{e.etiqueta}</option>
@@ -184,6 +199,26 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
             </Button>
           </a>
 
+          {/* Vista previa PDF */}
+          {factura.lineas.length > 0 && (
+            <Button
+              variante="secundario"
+              tamaño="sm"
+              onClick={() => {
+                const url = factura.payment_token
+                  ? `/api/pay/${factura.payment_token}/pdf`
+                  : `/api/facturas/${factura.id}/pdf`
+                window.open(url, '_blank')
+              }}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Vista previa
+            </Button>
+          )}
+
           {/* Enviar por email */}
           <Button
             variante="secundario"
@@ -203,18 +238,18 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
           {/* Recordatorios automáticos — solo facturas vencidas */}
           {factura.estado === 'vencida' && (
             <div
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5"
               title={
                 factura.reminders_sent >= 3
                   ? 'Se han enviado los 3 recordatorios automáticos'
                   : `${factura.reminders_sent} de 3 recordatorios enviados — el siguiente se envía automáticamente`
               }
             >
-              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className={`text-xs font-medium ${factura.reminders_sent >= 3 ? 'text-gray-400' : 'text-gray-600'}`}>
+              <span className={`text-xs font-medium ${factura.reminders_sent >= 3 ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-400'}`}>
                 {factura.reminders_sent >= 3
                   ? 'Recordatorios agotados'
                   : `${factura.reminders_sent}/3 recordatorios`}
@@ -227,7 +262,7 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
                     className={`h-1.5 w-1.5 rounded-full ${
                       n <= factura.reminders_sent
                         ? n === 3 ? 'bg-red-500' : n === 2 ? 'bg-orange-400' : 'bg-amber-400'
-                        : 'bg-gray-200'
+                        : 'bg-gray-200 dark:bg-gray-700'
                     }`}
                   />
                 ))}
@@ -252,6 +287,31 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
             </Button>
           )}
 
+          {/* Emitir abono — solo para emitidas y pagadas que no sean ya un abono */}
+          {(factura.estado === 'emitida' || factura.estado === 'pagada') &&
+           (factura as unknown as { tipo?: string }).tipo !== 'rectificativa' && (
+            confirmandoAbono ? (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">¿Emitir abono?</span>
+                <Button variante="peligro" tamaño="sm" cargando={isPending} onClick={handleEmitirAbono}>Sí</Button>
+                <Button variante="secundario" tamaño="sm" disabled={isPending} onClick={() => setConfirmandoAbono(false)}>No</Button>
+              </div>
+            ) : (
+              <Button
+                variante="secundario"
+                tamaño="sm"
+                onClick={() => setConfirmandoAbono(true)}
+                title="Genera una factura rectificativa con importes negativos y cancela esta factura"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Emitir abono
+              </Button>
+            )
+          )}
+
           {/* Duplicar */}
           <Button
             variante="secundario"
@@ -269,7 +329,7 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
           {/* Eliminar */}
           {confirmandoEliminar ? (
             <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500">¿Eliminar?</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">¿Eliminar?</span>
               <Button variante="peligro" tamaño="sm" cargando={isPending} onClick={handleEliminar}>Sí</Button>
               <Button variante="secundario" tamaño="sm" onClick={() => setConfirmandoEliminar(false)}>No</Button>
             </div>
@@ -306,11 +366,11 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
 
       {/* Panel del link de pago */}
       {linkVisible && paymentLinkUrl && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="rounded-xl border border-emerald-200 dark:border-green-800 bg-emerald-50 dark:bg-green-900/20 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-emerald-800">Link de cobro listo para enviar</p>
-              <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              <p className="text-sm font-semibold text-emerald-800 dark:text-green-300">Link de cobro listo para enviar</p>
+              <span className="flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/20 px-2 py-0.5 text-xs font-medium text-blue-700">
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -324,14 +384,14 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
               </svg>
             </button>
           </div>
-          <p className="mb-2 text-xs text-emerald-700">Envía este link a tu cliente para que pague online con tarjeta o transferencia bancaria.</p>
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200">
+          <p className="mb-2 text-xs text-emerald-700 dark:text-green-400">Envía este link a tu cliente para que pague online con tarjeta o transferencia bancaria.</p>
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700">
             <span className="min-w-0 flex-1 truncate">{paymentLinkUrl}</span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleCopiarLink}
-              className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-lg bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               {copiado ? (
                 <>
@@ -366,44 +426,44 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
       )}
 
       {/* Vista previa de la factura */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-10 print:border-0 print:p-0">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 md:p-10 print:border-0 print:p-0">
         {/* Cabecera */}
         <div className="flex flex-col gap-6 sm:flex-row sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">FACTURA</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">FACTURA</h1>
             <p className="mt-1 text-lg font-semibold text-blue-600">{factura.numero}</p>
           </div>
           <div className="text-left sm:text-right">
-            <p className="font-semibold text-gray-900">{nombreEmisor}</p>
-            {perfil.nif && <p className="text-sm text-gray-500">NIF: {perfil.nif}</p>}
-            {direccionEmisor && <p className="text-sm text-gray-500">{direccionEmisor}</p>}
-            {perfil.email && <p className="text-sm text-gray-500">{perfil.email}</p>}
-            {perfil.telefono && <p className="text-sm text-gray-500">{perfil.telefono}</p>}
+            <p className="font-semibold text-gray-900 dark:text-gray-100">{nombreEmisor}</p>
+            {perfil.nif && <p className="text-sm text-gray-500 dark:text-gray-400">NIF: {perfil.nif}</p>}
+            {direccionEmisor && <p className="text-sm text-gray-500 dark:text-gray-400">{direccionEmisor}</p>}
+            {perfil.email && <p className="text-sm text-gray-500 dark:text-gray-400">{perfil.email}</p>}
+            {perfil.telefono && <p className="text-sm text-gray-500 dark:text-gray-400">{perfil.telefono}</p>}
           </div>
         </div>
 
         {/* Fechas */}
-        <div className="mt-6 grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-4 rounded-lg bg-gray-50 dark:bg-gray-900 p-4 md:grid-cols-3">
           <div>
-            <p className="text-xs font-medium text-gray-400">Fecha de emisión</p>
-            <p className="text-sm font-medium text-gray-900">{formatDate(factura.fecha_emision)}</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Fecha de emisión</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(factura.fecha_emision)}</p>
           </div>
           {factura.fecha_vencimiento && (
             <div>
-              <p className="text-xs font-medium text-gray-400">Fecha de vencimiento</p>
-              <p className="text-sm font-medium text-gray-900">{formatDate(factura.fecha_vencimiento)}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Fecha de vencimiento</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(factura.fecha_vencimiento)}</p>
             </div>
           )}
           <div>
-            <p className="text-xs font-medium text-gray-400">Estado</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Estado</p>
             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_ESTADO[factura.estado] ?? ''}`}>
               {ESTADOS_CAMBIO.find(e => e.valor === factura.estado)?.etiqueta ?? factura.estado}
             </span>
           </div>
           {factura.paid_at && (
             <div>
-              <p className="text-xs font-medium text-gray-400">Fecha de cobro</p>
-              <p className="text-sm font-medium text-green-700">
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Fecha de cobro</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
                 {new Intl.DateTimeFormat('es-ES', {
                   day: '2-digit', month: '2-digit', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
@@ -415,33 +475,33 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
 
         {/* Datos del cliente */}
         <div className="mt-6">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Facturado a</p>
-          <p className="font-semibold text-gray-900">{factura.cliente.nombre}</p>
-          {factura.cliente.nif && <p className="text-sm text-gray-500">NIF: {factura.cliente.nif}</p>}
-          {direccionCliente && <p className="text-sm text-gray-500">{direccionCliente}</p>}
-          {factura.cliente.email && <p className="text-sm text-gray-500">{factura.cliente.email}</p>}
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Facturado a</p>
+          <p className="font-semibold text-gray-900 dark:text-gray-100">{factura.cliente.nombre}</p>
+          {factura.cliente.nif && <p className="text-sm text-gray-500 dark:text-gray-400">NIF: {factura.cliente.nif}</p>}
+          {direccionCliente && <p className="text-sm text-gray-500 dark:text-gray-400">{direccionCliente}</p>}
+          {factura.cliente.email && <p className="text-sm text-gray-500 dark:text-gray-400">{factura.cliente.email}</p>}
         </div>
 
         {/* Líneas de factura */}
         <div className="mt-8">
           <table className="w-full">
             <thead>
-              <tr className="border-b-2 border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <tr className="border-b-2 border-gray-200 dark:border-gray-700 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                 <th className="pb-2 pr-4">Descripción</th>
                 <th className="pb-2 pr-4 text-right">Cantidad</th>
                 <th className="pb-2 pr-4 text-right">Precio unit.</th>
                 <th className="pb-2 text-right">Subtotal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {factura.lineas
                 .sort((a, b) => a.orden - b.orden)
                 .map((linea) => (
                   <tr key={linea.id}>
-                    <td className="py-3 pr-4 text-sm text-gray-900">{linea.descripcion}</td>
-                    <td className="py-3 pr-4 text-right text-sm text-gray-600">{linea.cantidad}</td>
-                    <td className="py-3 pr-4 text-right text-sm text-gray-600">{formatCurrency(linea.precio_unitario)}</td>
-                    <td className="py-3 text-right text-sm font-medium text-gray-900">{formatCurrency(linea.subtotal)}</td>
+                    <td className="py-3 pr-4 text-sm text-gray-900 dark:text-gray-100">{linea.descripcion}</td>
+                    <td className="py-3 pr-4 text-right text-sm text-gray-600 dark:text-gray-400">{linea.cantidad}</td>
+                    <td className="py-3 pr-4 text-right text-sm text-gray-600 dark:text-gray-400">{formatCurrency(linea.precio_unitario)}</td>
+                    <td className="py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(linea.subtotal)}</td>
                   </tr>
                 ))}
             </tbody>
@@ -452,23 +512,23 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
         <div className="mt-6 flex justify-end">
           <div className="w-full max-w-xs space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Base imponible</span>
-              <span className="font-medium text-gray-900">{formatCurrency(factura.base_imponible)}</span>
+              <span className="text-gray-500 dark:text-gray-400">Base imponible</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(factura.base_imponible)}</span>
             </div>
             {factura.iva_porcentaje > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">IVA ({factura.iva_porcentaje}%)</span>
-                <span className="font-medium text-gray-900">+ {formatCurrency(factura.iva_importe)}</span>
+                <span className="text-gray-500 dark:text-gray-400">IVA ({factura.iva_porcentaje}%)</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">+ {formatCurrency(factura.iva_importe)}</span>
               </div>
             )}
             {factura.irpf_porcentaje > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">IRPF ({factura.irpf_porcentaje}%)</span>
+                <span className="text-gray-500 dark:text-gray-400">IRPF ({factura.irpf_porcentaje}%)</span>
                 <span className="font-medium text-red-600">− {formatCurrency(factura.irpf_importe)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t border-gray-200 pt-2">
-              <span className="text-base font-bold text-gray-900">Total</span>
+            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
+              <span className="text-base font-bold text-gray-900 dark:text-gray-100">Total</span>
               <span className="text-xl font-bold text-blue-600">{formatCurrency(factura.total)}</span>
             </div>
           </div>
@@ -476,9 +536,9 @@ export function DetalleFactura({ factura, perfil }: DetalleFacturaProps) {
 
         {/* Notas */}
         {factura.notas && (
-          <div className="mt-8 border-t border-gray-100 pt-5">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Notas</p>
-            <p className="whitespace-pre-line text-sm text-gray-600">{factura.notas}</p>
+          <div className="mt-8 border-t border-gray-100 dark:border-gray-700 pt-5">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Notas</p>
+            <p className="whitespace-pre-line text-sm text-gray-600 dark:text-gray-400">{factura.notas}</p>
           </div>
         )}
       </div>

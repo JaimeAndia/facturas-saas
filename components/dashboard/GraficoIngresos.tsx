@@ -22,8 +22,8 @@ function TooltipPersonalizado({ active, payload, label }: {
   if (!active || !payload?.length) return null
   const fmt = (v: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(v)
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md">
-      <p className="mb-1.5 text-xs font-medium text-gray-500">{label}</p>
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
       {payload.map((p) => (
         <p key={p.name} className="text-sm font-semibold" style={{ color: p.color }}>
           {p.name === 'cobrado' ? 'Cobrado' : 'Pendiente'}: {fmt(p.value)}
@@ -33,8 +33,35 @@ function TooltipPersonalizado({ active, payload, label }: {
   )
 }
 
+/** Calcula un step "redondo" (1k, 2k, 5k, 10k…) y devuelve 5 intervalos uniformes. */
+function calcularTicks(maximo: number, numIntervalos = 5): { ticks: number[]; niceMax: number } {
+  if (maximo === 0) {
+    const step = 1000
+    return {
+      ticks: Array.from({ length: numIntervalos + 1 }, (_, i) => i * step),
+      niceMax: step * numIntervalos,
+    }
+  }
+  // Paso raw con un 15 % de margen superior
+  const rawStep = (maximo * 1.15) / numIntervalos
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
+  const normalized = rawStep / magnitude
+  // Redondear al múltiplo "nice" más cercano por encima
+  const step =
+    normalized <= 1 ? 1 * magnitude :
+    normalized <= 2 ? 2 * magnitude :
+    normalized <= 5 ? 5 * magnitude :
+                     10 * magnitude
+  const niceMax = step * numIntervalos
+  return {
+    ticks: Array.from({ length: numIntervalos + 1 }, (_, i) => i * step),
+    niceMax,
+  }
+}
+
 export function GraficoIngresos({ datos }: Props) {
-  const maximo = Math.max(...datos.flatMap((d) => [d.cobrado, d.pendiente]), 1)
+  const maximo = Math.max(...datos.flatMap((d) => [d.cobrado, d.pendiente]), 0)
+  const { ticks, niceMax } = calcularTicks(maximo)
 
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -47,7 +74,8 @@ export function GraficoIngresos({ datos }: Props) {
           tickLine={false}
         />
         <YAxis
-          domain={[0, maximo * 1.2]}
+          domain={[0, niceMax]}
+          ticks={ticks}
           tick={{ fontSize: 11, fill: '#9ca3af' }}
           axisLine={false}
           tickLine={false}

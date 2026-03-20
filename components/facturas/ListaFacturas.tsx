@@ -19,8 +19,6 @@ function IconoCobro({ className }: { className?: string }) {
   )
 }
 
-type EstadoFiltro = 'todas' | 'borrador' | 'emitida' | 'pagada' | 'vencida' | 'cancelada'
-
 interface FacturaConCliente extends Factura {
   clientes: Pick<Cliente, 'nombre' | 'email'> | null
 }
@@ -30,8 +28,7 @@ interface ListaFacturasProps {
   cobrosActivos?: boolean
 }
 
-const ESTADOS: { valor: EstadoFiltro; etiqueta: string }[] = [
-  { valor: 'todas', etiqueta: 'Todas' },
+const ESTADOS = [
   { valor: 'borrador', etiqueta: 'Borrador' },
   { valor: 'emitida', etiqueta: 'Emitida' },
   { valor: 'pagada', etiqueta: 'Pagada' },
@@ -40,11 +37,11 @@ const ESTADOS: { valor: EstadoFiltro; etiqueta: string }[] = [
 ]
 
 export const BADGE_ESTADO: Record<string, string> = {
-  borrador: 'bg-gray-100 text-gray-600',
-  emitida: 'bg-blue-100 text-blue-700',
-  pagada: 'bg-green-100 text-green-700',
-  vencida: 'bg-red-100 text-red-700',
-  cancelada: 'bg-gray-100 text-gray-400',
+  borrador: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+  emitida: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700',
+  pagada: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  vencida: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  cancelada: 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500',
 }
 
 export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }: ListaFacturasProps) {
@@ -54,7 +51,6 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
   useEffect(() => { setFacturas(facturasProp) }, [facturasProp])
 
   const [busqueda, setBusqueda] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState<EstadoFiltro>('todas')
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ mensaje: string; tipo: TipoToast } | null>(null)
 
@@ -113,15 +109,14 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
     setTimeout(() => setCopiadoId(null), 2000)
   }
 
-  // Filtrado: por estado y búsqueda
+  // Filtrado client-side: solo búsqueda por texto (estado/cliente/fecha vienen filtrados del servidor)
   const facturasFiltradas = facturas.filter((f) => {
-    const pasaEstado = filtroEstado === 'todas' || f.estado === filtroEstado
     const q = busqueda.toLowerCase().trim()
-    const pasaBusqueda =
+    return (
       !q ||
       f.numero.toLowerCase().includes(q) ||
       (f.clientes?.nombre ?? '').toLowerCase().includes(q)
-    return pasaEstado && pasaBusqueda
+    )
   })
 
   function handleEliminar(id: string) {
@@ -137,19 +132,13 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
     })
   }
 
-  // Conteo por estado para las pestañas
-  const conteo = facturas.reduce<Record<string, number>>((acc, f) => {
-    acc[f.estado] = (acc[f.estado] ?? 0) + 1
-    return acc
-  }, {})
-
   return (
     <>
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Buscador */}
         <div className="relative w-full sm:max-w-xs">
-          <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
             fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -159,7 +148,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
             placeholder="Buscar por número o cliente..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-9 pr-3 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
         <Link href="/facturas/nueva">
@@ -172,46 +161,22 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
         </Link>
       </div>
 
-      {/* Filtros por estado */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {ESTADOS.map(({ valor, etiqueta }) => (
-          <button
-            key={valor}
-            onClick={() => setFiltroEstado(valor)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              filtroEstado === valor
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {etiqueta}
-            {valor !== 'todas' && conteo[valor] ? (
-              <span className={`rounded-full px-1.5 py-0.5 text-xs ${
-                filtroEstado === valor ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                {conteo[valor]}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
       {/* Tabla */}
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         {facturas.length === 0 ? (
           <div className="py-16 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="mt-3 text-sm font-medium text-gray-900">Sin facturas</p>
-            <p className="mt-1 text-sm text-gray-500">Crea tu primera factura ahora.</p>
+            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">Sin facturas</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Crea tu primera factura ahora.</p>
             <div className="mt-5">
               <Link href="/facturas/nueva"><Button>Crear factura</Button></Link>
             </div>
           </div>
         ) : facturasFiltradas.length === 0 ? (
-          <div className="py-10 text-center text-sm text-gray-500">
+          <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
             No hay facturas que coincidan con el filtro aplicado.
           </div>
         ) : (
@@ -227,15 +192,15 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                 <col style={{ width: '20%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-gray-200">
+                <tr className="border-b border-gray-200 dark:border-gray-700">
                   {(['Número','Cliente','Fecha','Estado'] as const).map(h => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{h}</th>
                   ))}
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Total</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Total</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {facturasFiltradas.map((factura) => (
                   <Fragment key={factura.id}>
                     <tr>
@@ -246,11 +211,11 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                         </Link>
                       </td>
                       <td className="max-w-0 px-5 py-3.5">
-                        <span className="block truncate text-sm text-gray-600">
+                        <span className="block truncate text-sm text-gray-600 dark:text-gray-300">
                           {factura.clientes?.nombre ?? '—'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-gray-500">
+                      <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(factura.fecha_emision)}
                       </td>
                       <td className="px-5 py-3.5">
@@ -260,13 +225,13 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                           </span>
                           {factura.factura_recurrente_id && (
                             <Link href={`/facturas/recurrentes/${factura.factura_recurrente_id}`}
-                              className="w-fit rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 hover:bg-violet-200">
+                              className="w-fit rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400 hover:bg-violet-200 dark:hover:bg-violet-900/50">
                               ↻ Recurrente
                             </Link>
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right text-sm font-semibold text-gray-900">
+                      <td className="px-5 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(factura.total)}
                       </td>
                       <td className="px-5 py-3.5">
@@ -285,7 +250,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                                 <span className="group relative mr-2">
                                   <button
                                     disabled
-                                    className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-400"
+                                    className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500"
                                   >
                                     <IconoCobro className="h-3.5 w-3.5" />
                                     Cobrar
@@ -301,8 +266,8 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                                   title={paymentLinks[factura.id] ? 'Ver link de cobro para enviar al cliente' : 'Generar link para que el cliente pague online'}
                                   className={`mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                                     paymentLinks[factura.id]
-                                      ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                      ? 'bg-emerald-50 dark:bg-green-900/20 text-emerald-700 dark:text-green-400 hover:bg-emerald-100 dark:hover:bg-green-900/30'
+                                      : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30'
                                   }`}
                                 >
                                   {generandoLinkId === factura.id ? (
@@ -322,7 +287,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                               )
                             )}
                             <Link href={`/blockchain?factura=${factura.id}`}
-                              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 hover:bg-violet-50 hover:text-violet-600"
+                              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 hover:bg-violet-50 hover:text-violet-600"
                               title="Ver verificación blockchain">
                               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -331,7 +296,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                               Ver verificación
                             </Link>
                             <Link href={`/facturas/${factura.id}`}
-                              className="rounded-lg p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+                              className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-blue-50 hover:text-blue-600"
                               title="Ver factura">
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -339,7 +304,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                               </svg>
                             </Link>
                             <button onClick={() => setConfirmandoId(factura.id)} title="Eliminar"
-                              className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600">
+                              className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-red-50 hover:text-red-600">
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -353,11 +318,11 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                     {linkAbiertoId === factura.id && paymentLinks[factura.id] && (
                       <tr>
                         <td colSpan={6} className="px-5 pb-3">
-                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                          <div className="rounded-lg border border-emerald-200 dark:border-green-800 bg-emerald-50 dark:bg-green-900/20 p-3">
                             <div className="mb-2 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-xs font-semibold text-emerald-800">Link de cobro listo</p>
-                                <span className="flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+                                <p className="text-xs font-semibold text-emerald-800 dark:text-green-300">Link de cobro listo</p>
+                                <span className="flex items-center gap-0.5 rounded-full bg-blue-100 dark:bg-blue-900/20 px-1.5 py-0.5 text-xs font-medium text-blue-700">
                                   <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -365,19 +330,19 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                                   Stripe
                                 </span>
                               </div>
-                              <p className="text-xs text-emerald-600">Envíaselo al cliente para que pague online</p>
+                              <p className="text-xs text-emerald-600 dark:text-green-400">Envíaselo al cliente para que pague online</p>
                               <button onClick={() => setLinkAbiertoId(null)} className="text-emerald-500 hover:text-emerald-700">
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                               </button>
                             </div>
-                            <div className="flex items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-xs text-gray-600 ring-1 ring-gray-200">
+                            <div className="flex items-center gap-2 rounded-md bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700">
                               <span className="min-w-0 flex-1 truncate">{paymentLinks[factura.id]}</span>
                             </div>
                             <div className="mt-2 flex flex-wrap gap-2">
                               <button onClick={() => handleCopiarLink(factura.id)}
-                                className="flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50">
+                                className="flex items-center gap-1 rounded-md bg-white dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                 {copiadoId === factura.id ? (
                                   <><svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Copiado</>
                                 ) : (
@@ -413,7 +378,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
             </table>
 
             {/* ── LISTA MÓVIL ────────────────────────────────────────── */}
-            <ul className="divide-y divide-gray-100 md:hidden">
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700 md:hidden">
               {facturasFiltradas.map((factura) => (
                 <li key={factura.id} className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
@@ -421,12 +386,12 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                       className="min-w-0 text-sm font-medium text-blue-600 hover:underline">
                       {factura.numero}
                     </Link>
-                    <span className="ml-auto text-sm font-semibold text-gray-900">
+                    <span className="ml-auto text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {formatCurrency(factura.total)}
                     </span>
                     <div className="flex items-center gap-0.5">
                       <Link href={`/blockchain?factura=${factura.id}`}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-violet-50 hover:text-violet-600"
+                        className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-violet-50 hover:text-violet-600"
                         title="Ver verificación blockchain">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -434,7 +399,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                         </svg>
                       </Link>
                       <Link href={`/facturas/${factura.id}`}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600">
+                        className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-blue-50 hover:text-blue-600">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -443,9 +408,9 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                     </div>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{factura.clientes?.nombre ?? '—'}</span>
-                    <span className="text-gray-300">·</span>
-                    <span className="text-xs text-gray-400">{formatDate(factura.fecha_emision)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{factura.clientes?.nombre ?? '—'}</span>
+                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(factura.fecha_emision)}</span>
                     <div className="ml-auto flex flex-col items-end gap-1">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_ESTADO[factura.estado] ?? ''}`}>
                         {ESTADOS.find(e => e.valor === factura.estado)?.etiqueta}
@@ -461,7 +426,7 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                   {factura.estado === 'emitida' && !factura.factura_recurrente_id && (
                     <div className="mt-2">
                       {!cobrosActivos ? (
-                        <a href="/configuracion" className="flex w-fit items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-400">
+                        <a href="/configuracion" className="flex w-fit items-center gap-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-400 dark:text-gray-500">
                           <IconoCobro className="h-3.5 w-3.5" />
                           Activa tu cuenta en Configuración → Cobros
                         </a>
@@ -470,7 +435,9 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                           onClick={() => handleGenerarLink(factura.id)}
                           disabled={generandoLinkId === factura.id}
                           className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
-                            paymentLinks[factura.id] ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            paymentLinks[factura.id]
+                              ? 'bg-emerald-50 dark:bg-green-900/20 text-emerald-700 dark:text-green-400'
+                              : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30'
                           }`}
                         >
                           {generandoLinkId === factura.id ? (
@@ -492,13 +459,13 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
                   )}
                   {/* Panel link en móvil */}
                   {linkAbiertoId === factura.id && paymentLinks[factura.id] && (
-                    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                      <div className="flex items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-xs text-gray-600 ring-1 ring-gray-200">
+                    <div className="mt-3 rounded-lg border border-emerald-200 dark:border-green-800 bg-emerald-50 dark:bg-green-900/20 p-3">
+                      <div className="flex items-center gap-2 rounded-md bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700">
                         <span className="min-w-0 flex-1 truncate">{paymentLinks[factura.id]}</span>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <button onClick={() => handleCopiarLink(factura.id)}
-                          className="flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200">
+                          className="flex items-center gap-1 rounded-md bg-white dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700">
                           {copiadoId === factura.id ? 'Copiado ✓' : 'Copiar'}
                         </button>
                         {factura.clientes?.email && (
@@ -521,8 +488,8 @@ export function ListaFacturas({ facturas: facturasProp, cobrosActivos = false }:
               ))}
             </ul>
 
-            <div className="border-t border-gray-100 px-5 py-3">
-              <p className="text-xs text-gray-400">
+            <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {facturasFiltradas.length === facturas.length
                   ? `${facturas.length} factura${facturas.length !== 1 ? 's' : ''}`
                   : `${facturasFiltradas.length} de ${facturas.length} facturas`}

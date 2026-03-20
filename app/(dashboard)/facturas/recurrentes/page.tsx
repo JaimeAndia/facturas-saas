@@ -55,8 +55,8 @@ export default async function RecurrentesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Facturas recurrentes</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Facturas recurrentes</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Modo manual: la factura se genera en cada ciclo y el cliente paga con enlace.
           Modo automático: Stripe cobra con la tarjeta guardada del cliente.
         </p>

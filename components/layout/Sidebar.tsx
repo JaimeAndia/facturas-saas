@@ -98,9 +98,9 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
+    <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
+      <div className="flex h-16 items-center border-b border-gray-200 px-6 dark:border-gray-700">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +108,7 @@ export function Sidebar() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <span className="text-sm font-bold text-gray-900">FacturX</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-white">FacturX</span>
         </Link>
       </div>
 
@@ -123,11 +123,11 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 activo
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
               )}
             >
-              <span className={activo ? 'text-blue-600' : 'text-gray-400'}>
+              <span className={activo ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}>
                 {item.icono}
               </span>
               {item.etiqueta}
@@ -137,8 +137,8 @@ export function Sidebar() {
       </nav>
 
       {/* Footer del sidebar */}
-      <div className="border-t border-gray-200 p-4">
-        <p className="text-xs text-gray-400">FacturX v0.1</p>
+      <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+        <p className="text-xs text-gray-400 dark:text-gray-600">FacturX v0.1</p>
       </div>
     </aside>
   )

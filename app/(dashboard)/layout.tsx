@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   if (!perfil) redirect('/login')
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       {/* Sidebar: visible en desktop, oculto en móvil */}
       <div className="hidden md:flex md:flex-shrink-0">
         <Sidebar />

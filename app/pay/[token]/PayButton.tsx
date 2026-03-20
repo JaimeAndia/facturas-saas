@@ -40,11 +40,11 @@ export function PayButton({ token, total }: PayButtonProps) {
   return (
     <div className="space-y-4">
       {/* Selector de método (UI decorativa para la demo) */}
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-900/20">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
           Método de pago
         </p>
-        <div className="flex items-center gap-3 rounded-lg border border-blue-300 bg-white px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-lg border border-blue-300 bg-white px-3 py-2.5 dark:border-blue-800 dark:bg-gray-800">
           {/* Icono banco */}
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-600">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,8 +53,8 @@ export function PayButton({ token, total }: PayButtonProps) {
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900">Pago seguro</p>
-            <p className="text-xs text-gray-400">Tarjeta · Transferencia</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Pago seguro</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Tarjeta · Transferencia</p>
           </div>
           <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd"
@@ -90,19 +90,19 @@ export function PayButton({ token, total }: PayButtonProps) {
       </button>
 
       {error && (
-        <p className="text-center text-sm text-red-600">{error}</p>
+        <p className="text-center text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       {/* Pie de seguridad */}
       <div className="flex flex-col items-center gap-1">
-        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           Pago seguro procesado por Stripe
         </div>
-        <p className="text-xs text-gray-300">Plataforma de pagos regulada globalmente</p>
+        <p className="text-xs text-gray-300 dark:text-gray-600">Plataforma de pagos regulada globalmente</p>
       </div>
     </div>
   )

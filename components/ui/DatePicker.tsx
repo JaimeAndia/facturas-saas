@@ -98,7 +98,7 @@ export function DatePicker({
   return (
     <div ref={contenedorRef} className={cn('relative flex flex-col gap-1.5', className)}>
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
           {required && <span className="ml-1 text-red-500">*</span>}
         </label>
@@ -111,21 +111,21 @@ export function DatePicker({
         onClick={() => setAbierto((o) => !o)}
         onKeyDown={(e) => e.key === 'Enter' && setAbierto((o) => !o)}
         className={cn(
-          'flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-lg border bg-white px-3 text-sm transition-colors',
+          'flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-lg border bg-white px-3 text-sm transition-colors dark:bg-gray-800 dark:text-gray-200',
           error
             ? 'border-red-400'
             : abierto
               ? 'border-blue-500 ring-2 ring-blue-500/20'
-              : 'border-gray-300 hover:border-gray-400',
+              : 'border-gray-300 hover:border-gray-400 dark:border-gray-600',
         )}
       >
         {/* Icono calendario */}
-        <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
 
-        <span className={cn('flex-1 text-sm', value ? 'text-gray-900' : 'text-gray-400')}>
+        <span className={cn('flex-1 text-sm', value ? 'text-gray-900 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500')}>
           {value ? formatDisplay(value) : (placeholder ?? 'Seleccionar fecha…')}
         </span>
 
@@ -134,7 +134,7 @@ export function DatePicker({
             type="button"
             onClick={limpiar}
             title="Limpiar fecha"
-            className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+            className="rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -145,26 +145,26 @@ export function DatePicker({
 
       {/* Dropdown calendario */}
       {abierto && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
+        <div className="absolute left-0 top-full z-30 mt-1.5 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-800">
 
           {/* Navegación mes */}
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
               onClick={() => setMesVista(new Date(año, mes - 1, 1))}
-              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
+              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {MESES[mes]} {año}
             </span>
             <button
               type="button"
               onClick={() => setMesVista(new Date(año, mes + 1, 1))}
-              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
+              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -175,7 +175,7 @@ export function DatePicker({
           {/* Cabecera días de la semana */}
           <div className="mb-1 grid grid-cols-7 text-center">
             {DIAS_SEMANA.map((d) => (
-              <span key={d} className="text-xs font-medium text-gray-400">{d}</span>
+              <span key={d} className="text-xs font-medium text-gray-400 dark:text-gray-500">{d}</span>
             ))}
           </div>
 
@@ -201,12 +201,12 @@ export function DatePicker({
                   onClick={() => seleccionar(dia)}
                   className={cn(
                     'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm transition-colors',
-                    desactivado && 'cursor-not-allowed text-gray-300',
+                    desactivado && 'cursor-not-allowed text-gray-300 dark:text-gray-600',
                     !desactivado && esSeleccionado && 'bg-blue-600 font-semibold text-white',
                     !desactivado && !esSeleccionado && esHoy &&
                       'border border-blue-300 font-medium text-blue-600 hover:bg-blue-50',
                     !desactivado && !esSeleccionado && !esHoy &&
-                      'text-gray-700 hover:bg-gray-100',
+                      'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700',
                   )}
                 >
                   {dia}
@@ -217,7 +217,7 @@ export function DatePicker({
 
           {/* Atajo "Hoy" */}
           {!fechaMin || new Date() >= fechaMin ? (
-            <div className="mt-3 border-t border-gray-100 pt-3 text-center">
+            <div className="mt-3 border-t border-gray-100 pt-3 text-center dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => { onChange(hoy); setAbierto(false) }}
@@ -230,8 +230,8 @@ export function DatePicker({
         </div>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      {ayuda && !error && <p className="text-xs text-gray-500">{ayuda}</p>}
+      {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+      {ayuda && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{ayuda}</p>}
     </div>
   )
 }

@@ -19,13 +19,13 @@ export function BannerSuscripcion() {
 
   if (planStatus === 'past_due') {
     return (
-      <div className="flex items-center justify-between gap-4 bg-red-600 px-4 py-2.5 text-sm text-white">
+      <div className="flex items-center justify-between gap-4 bg-red-600 dark:bg-red-800 px-4 py-2.5 text-sm text-white">
         <p>
           <strong>Pago fallido.</strong> Actualiza tu método de pago para no perder el acceso.
         </p>
         <Link
           href="/configuracion/planes"
-          className="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+          className="shrink-0 rounded-md bg-white dark:bg-red-100 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-200"
         >
           Gestionar pago
         </Link>
@@ -34,7 +34,7 @@ export function BannerSuscripcion() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-2.5 text-sm text-white">
+    <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-800 dark:to-violet-800 px-4 py-2.5 text-sm text-white">
       <p>
         {restantes !== null && restantes <= 1 ? (
           restantes === 0
@@ -47,7 +47,7 @@ export function BannerSuscripcion() {
       <div className="flex shrink-0 items-center gap-2">
         <Link
           href="/configuracion/planes"
-          className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+          className="rounded-md bg-white dark:bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-200"
         >
           Ver planes
         </Link>

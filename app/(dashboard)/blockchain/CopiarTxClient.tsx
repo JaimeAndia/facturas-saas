@@ -23,7 +23,7 @@ export function CopiarTxClient({ txHash }: { txHash: string }) {
     <button
       onClick={handleCopiar}
       title={copiado ? 'Copiado' : 'Copiar TX hash'}
-      className="text-gray-400 hover:text-gray-600 transition-colors"
+      className="text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:text-gray-300"
     >
       {copiado ? (
         <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

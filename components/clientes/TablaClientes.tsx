@@ -103,7 +103,7 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
             placeholder="Buscar por nombre, NIF o email..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="h-10 w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="h-10 w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:placeholder:text-gray-500"
           />
         </div>
 
@@ -119,16 +119,16 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
       </div>
 
       {/* Tabla */}
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         {clientes.length === 0 ? (
           /* Estado vacío */
           <div className="py-16 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p className="mt-3 text-sm font-medium text-gray-900">Sin clientes</p>
-            <p className="mt-1 text-sm text-gray-500">Empieza añadiendo tu primer cliente.</p>
+            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">Sin clientes</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Empieza añadiendo tu primer cliente.</p>
             <div className="mt-5">
               <Button onClick={() => setModal({ abierto: true, modo: 'crear' })}>
                 Añadir cliente
@@ -137,13 +137,13 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
           </div>
         ) : clientesFiltrados.length === 0 ? (
           /* Sin resultados de búsqueda */
-          <div className="py-10 text-center text-sm text-gray-500">
+          <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
             No se encontraron clientes con &ldquo;{busqueda}&rdquo;
           </div>
         ) : (
           <>
             {/* Cabecera tabla — solo desktop */}
-            <div className="hidden border-b border-gray-200 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 md:grid md:grid-cols-[2fr_1fr_1.5fr_1fr_auto] md:gap-4">
+            <div className="hidden border-b border-gray-200 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400 md:grid md:grid-cols-[2fr_1fr_1.5fr_1fr_auto] md:gap-4 dark:border-gray-700 dark:text-gray-500">
               <span>Nombre</span>
               <span>NIF</span>
               <span>Email</span>
@@ -151,20 +151,20 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
               <span>Acciones</span>
             </div>
 
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
               {clientesFiltrados.map((cliente) => (
                 <li key={cliente.id} className="px-5 py-3.5">
                   {/* Layout desktop */}
                   <div className="hidden md:grid md:grid-cols-[2fr_1fr_1.5fr_1fr_auto] md:items-center md:gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{cliente.nombre}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cliente.nombre}</p>
                       {cliente.ciudad && (
-                        <p className="text-xs text-gray-400">{cliente.ciudad}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{cliente.ciudad}</p>
                       )}
                     </div>
-                    <span className="text-sm text-gray-600">{cliente.nif ?? '—'}</span>
-                    <span className="truncate text-sm text-gray-600">{cliente.email ?? '—'}</span>
-                    <span className="text-sm text-gray-600">{cliente.telefono ?? '—'}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.nif ?? '—'}</span>
+                    <span className="truncate text-sm text-gray-600 dark:text-gray-400">{cliente.email ?? '—'}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.telefono ?? '—'}</span>
 
                     {/* Acciones desktop */}
                     <AccionesCliente
@@ -181,11 +181,11 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
                   {/* Layout móvil: card */}
                   <div className="flex items-start justify-between md:hidden">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900">{cliente.nombre}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cliente.nombre}</p>
                       <div className="mt-1 space-y-0.5">
-                        {cliente.nif && <p className="text-xs text-gray-500">NIF: {cliente.nif}</p>}
-                        {cliente.email && <p className="text-xs text-gray-500">{cliente.email}</p>}
-                        {cliente.ciudad && <p className="text-xs text-gray-400">{cliente.ciudad}</p>}
+                        {cliente.nif && <p className="text-xs text-gray-500 dark:text-gray-400">NIF: {cliente.nif}</p>}
+                        {cliente.email && <p className="text-xs text-gray-500 dark:text-gray-400">{cliente.email}</p>}
+                        {cliente.ciudad && <p className="text-xs text-gray-400 dark:text-gray-500">{cliente.ciudad}</p>}
                       </div>
                     </div>
                     <AccionesCliente
@@ -203,8 +203,8 @@ export function TablaClientes({ clientes: clientesIniciales, avisoInicial }: Tab
             </ul>
 
             {/* Footer con conteo */}
-            <div className="border-t border-gray-100 px-5 py-3">
-              <p className="text-xs text-gray-400">
+            <div className="border-t border-gray-100 px-5 py-3 dark:border-gray-700">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {clientesFiltrados.length === clientes.length
                   ? `${clientes.length} cliente${clientes.length !== 1 ? 's' : ''}`
                   : `${clientesFiltrados.length} de ${clientes.length} clientes`}
@@ -254,6 +254,7 @@ interface AccionesClienteProps {
 }
 
 function AccionesCliente({
+  cliente,
   confirmando,
   cargando,
   onEditar,
@@ -261,10 +262,11 @@ function AccionesCliente({
   onConfirmarEliminar,
   onCancelarEliminar,
 }: AccionesClienteProps) {
+  const esProtegido = cliente.nombre === 'Cobro directo'
   if (confirmando) {
     return (
       <div className="flex shrink-0 items-center gap-1">
-        <span className="hidden text-xs text-gray-500 sm:block">¿Eliminar?</span>
+        <span className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">¿Eliminar?</span>
         <Button
           variante="peligro"
           tamaño="sm"
@@ -291,7 +293,7 @@ function AccionesCliente({
       <button
         onClick={onEditar}
         title="Editar cliente"
-        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -299,16 +301,23 @@ function AccionesCliente({
         </svg>
       </button>
       {/* Eliminar */}
-      <button
-        onClick={onIniciarEliminar}
-        title="Eliminar cliente"
-        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
+      <span title={esProtegido ? 'Este cliente es necesario para el TPV' : undefined}>
+        <button
+          onClick={esProtegido ? undefined : onIniciarEliminar}
+          disabled={esProtegido}
+          title={esProtegido ? undefined : 'Eliminar cliente'}
+          className={`rounded-lg p-1.5 transition-colors ${
+            esProtegido
+              ? 'cursor-not-allowed text-gray-200 dark:text-gray-700'
+              : 'text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </span>
     </div>
   )
 }

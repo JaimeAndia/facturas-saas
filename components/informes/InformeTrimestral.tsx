@@ -93,18 +93,18 @@ export function InformeTrimestral({ facturas }: Props) {
   return (
     <div className="space-y-6">
       {/* Nota informativa */}
-      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="flex items-start gap-3 rounded-lg border border-amber-200 dark:border-yellow-800 bg-amber-50 dark:bg-yellow-900/20 px-4 py-3">
         <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p className="text-sm text-amber-800">
-          Este resumen es orientativo. Consultá con tu gestor antes de presentar cualquier declaración fiscal.
+        <p className="text-sm text-amber-800 dark:text-yellow-400">
+          Este resumen es orientativo. Consulta con tu gestor antes de presentar cualquier declaración fiscal.
         </p>
       </div>
 
       {/* Selectores */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 rounded-lg border border-gray-200 bg-white p-1">
+        <div className="flex gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
           {TRIMESTRES.map((t, i) => (
             <button
               key={i}
@@ -112,7 +112,7 @@ export function InformeTrimestral({ facturas }: Props) {
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 trimestre === i
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               {t.label.split(' ')[0]}
@@ -123,14 +123,14 @@ export function InformeTrimestral({ facturas }: Props) {
         <select
           value={año}
           onChange={(e) => setAño(Number(e.target.value))}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-200 px-3 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {añosDisponibles.map((a) => (
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
 
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
           {TRIMESTRES[trimestre].label}
         </span>
       </div>
@@ -164,15 +164,15 @@ export function InformeTrimestral({ facturas }: Props) {
       </div>
 
       {/* Tabla de facturas */}
-      <div className="rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <h2 className="text-sm font-semibold text-gray-900">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-5 py-4">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Facturas del periodo
           </h2>
           <button
             onClick={exportarCSV}
             disabled={facturasFiltradas.length === 0}
-            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -183,10 +183,10 @@ export function InformeTrimestral({ facturas }: Props) {
 
         {facturasFiltradas.length === 0 ? (
           <div className="py-12 text-center">
-            <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="mt-3 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
               No hay facturas en {TRIMESTRES[trimestre].label} de {año}
             </p>
           </div>
@@ -194,7 +194,7 @@ export function InformeTrimestral({ facturas }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                <tr className="bg-gray-50 dark:bg-gray-900 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   <th className="px-5 py-3">Nº Factura</th>
                   <th className="px-5 py-3">Fecha</th>
                   <th className="px-5 py-3">Cliente</th>
@@ -205,18 +205,18 @@ export function InformeTrimestral({ facturas }: Props) {
                   <th className="px-5 py-3">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {facturasFiltradas.map((f) => (
-                  <tr key={f.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-mono text-xs text-gray-700">{f.numero}</td>
-                    <td className="px-5 py-3 text-gray-600">{formatDate(f.fecha_emision)}</td>
-                    <td className="px-5 py-3 font-medium text-gray-900">{f.clientes?.nombre ?? '—'}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{formatCurrency(f.base_imponible)}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{formatCurrency(f.iva_importe)}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{formatCurrency(f.irpf_importe)}</td>
-                    <td className="px-5 py-3 text-right font-semibold text-gray-900">{formatCurrency(f.total)}</td>
+                  <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-5 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{f.numero}</td>
+                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{formatDate(f.fecha_emision)}</td>
+                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{f.clientes?.nombre ?? '—'}</td>
+                    <td className="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(f.base_imponible)}</td>
+                    <td className="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(f.iva_importe)}</td>
+                    <td className="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(f.irpf_importe)}</td>
+                    <td className="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(f.total)}</td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${estadoBadge[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${estadoBadge[f.estado] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
                         {f.estado.charAt(0).toUpperCase() + f.estado.slice(1)}
                       </span>
                     </td>
@@ -225,7 +225,7 @@ export function InformeTrimestral({ facturas }: Props) {
               </tbody>
               {/* Fila de totales */}
               <tfoot>
-                <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold text-gray-900">
+                <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-semibold text-gray-900 dark:text-gray-100">
                   <td colSpan={3} className="px-5 py-3 text-xs uppercase tracking-wide">Total periodo</td>
                   <td className="px-5 py-3 text-right">{formatCurrency(totales.base)}</td>
                   <td className="px-5 py-3 text-right">{formatCurrency(totales.iva)}</td>
@@ -254,10 +254,10 @@ function TarjetaResumen({
   color: 'blue' | 'violet' | 'orange' | 'green'
 }) {
   const colores = {
-    blue: 'border-blue-100 bg-blue-50 text-blue-700',
-    violet: 'border-violet-100 bg-violet-50 text-violet-700',
-    orange: 'border-orange-100 bg-orange-50 text-orange-700',
-    green: 'border-green-100 bg-green-50 text-green-700',
+    blue: 'border-blue-100 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700',
+    violet: 'border-violet-100 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-700',
+    orange: 'border-orange-100 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-700',
+    green: 'border-green-100 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700',
   }
 
   return (

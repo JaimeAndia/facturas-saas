@@ -57,23 +57,23 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
     <div className="space-y-6">
       {/* Alertas */}
       {planStatus === 'past_due' && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700">
           <strong>Pago fallido.</strong> Actualiza tu método de pago para mantener el acceso.
           <button onClick={abrirPortal} className="ml-2 underline hover:no-underline">Gestionar pago</button>
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {/* Toggle mensual / anual */}
       <div className="flex items-center justify-center gap-3">
-        <span className={`text-sm font-medium ${!esAnual ? 'text-gray-900' : 'text-gray-400'}`}>Mensual</span>
+        <span className={`text-sm font-medium ${!esAnual ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>Mensual</span>
         <button
           type="button"
           onClick={() => setEsAnual(!esAnual)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            esAnual ? 'bg-blue-600' : 'bg-gray-200'
+            esAnual ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
           }`}
           role="switch"
           aria-checked={esAnual}
@@ -82,11 +82,11 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
             esAnual ? 'translate-x-6' : 'translate-x-1'
           }`} />
         </button>
-        <span className={`text-sm font-medium ${esAnual ? 'text-gray-900' : 'text-gray-400'}`}>
+        <span className={`text-sm font-medium ${esAnual ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
           Anual
         </span>
         {esAnual && (
-          <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+          <span className="rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-semibold text-green-700">
             Ahorra un {DESCUENTO_ANUAL}%
           </span>
         )}
@@ -108,8 +108,8 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
             <div
               key={clave}
               className={`relative flex flex-col rounded-xl border p-5 ${
-                esPro ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
-              } ${esActual ? 'ring-2 ring-blue-600 ring-offset-2' : ''}`}
+                esPro ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              } ${esActual ? 'ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
             >
               {esPro && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
@@ -117,29 +117,29 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
                 </span>
               )}
               {esActual && (
-                <span className="absolute right-4 top-4 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <span className="absolute right-4 top-4 rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700">
                   Plan actual
                 </span>
               )}
 
               <div className="mb-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-gray-900">{plan.nombre}</h3>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.nombre}</h3>
                   {esAnual && plan.precio > 0 && (
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
+                    <span className="rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-bold text-green-700">
                       -{DESCUENTO_ANUAL}%
                     </span>
                   )}
                 </div>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   {esAnual && plan.precio > 0 && (
-                    <span className="text-base text-gray-400 line-through">{plan.precio}€</span>
+                    <span className="text-base text-gray-400 dark:text-gray-500 line-through">{plan.precio}€</span>
                   )}
-                  <span className="text-3xl font-bold text-gray-900">
+                  <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {precioMostrado === 0 ? 'Gratis' : `${precioMostrado}€`}
                   </span>
                   {precioMostrado > 0 && (
-                    <span className="text-sm text-gray-500">/mes</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">/mes</span>
                   )}
                 </div>
                 {esAnual && plan.precio > 0 && (
@@ -155,7 +155,7 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
                     <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-gray-600">{feature}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -165,16 +165,16 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
                   <button
                     onClick={abrirPortal}
                     disabled={cargando === 'portal'}
-                    className="w-full rounded-lg border border-gray-300 bg-white py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
                   >
                     {cargando === 'portal' ? 'Abriendo…' : 'Gestionar suscripción'}
                   </button>
                 ) : esActual && planStatus === 'active' && !tieneStripeCustomer ? (
-                  <p className="py-2 text-center text-sm text-gray-400">Plan activo</p>
+                  <p className="py-2 text-center text-sm text-gray-400 dark:text-gray-500">Plan activo</p>
                 ) : esActual && clave === 'free' ? (
-                  <p className="py-2 text-center text-sm text-gray-400">Plan activo</p>
+                  <p className="py-2 text-center text-sm text-gray-400 dark:text-gray-500">Plan activo</p>
                 ) : clave === 'free' ? (
-                  <p className="py-2 text-center text-xs text-gray-400">Plan base incluido</p>
+                  <p className="py-2 text-center text-xs text-gray-400 dark:text-gray-500">Plan base incluido</p>
                 ) : priceIdActivo ? (
                   <button
                     onClick={() => iniciarCheckout(priceIdActivo)}
@@ -190,7 +190,7 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
                       : `Suscribirse — ${precioMostrado}€/mes`}
                   </button>
                 ) : (
-                  <p className="py-2 text-center text-xs text-gray-400">Próximamente</p>
+                  <p className="py-2 text-center text-xs text-gray-400 dark:text-gray-500">Próximamente</p>
                 )}
               </div>
             </div>
@@ -199,7 +199,7 @@ export function PlanesCliente({ planActual, planStatus, tieneStripeCustomer, pla
       </div>
 
       {tieneStripeCustomer && planActual !== 'free' && (
-        <p className="text-center text-xs text-gray-400">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
           Para cancelar o cambiar tu forma de pago, usa{' '}
           <button onClick={abrirPortal} className="text-blue-600 underline hover:no-underline">
             el portal de cliente

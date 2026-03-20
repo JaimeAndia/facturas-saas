@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { render } from '@react-email/components'
 import { createClient } from '@/lib/supabase/server'
+import { getStripe } from '@/lib/stripe/client'
 import { getResend } from '@/lib/resend/client'
 import { calcularProximaFecha, formatDate } from '@/lib/utils'
 import { registrarEventoBlockchain } from '@/lib/blockchain-event'
@@ -296,12 +297,9 @@ export async function crearFacturaRecurrente(
     .update({ ultima_generacion: new Date().toISOString() })
     .eq('id', recurrente.id)
 
-  const tieneXrpl = perfil.plan === 'pro' || !!perfil.xrpl_addon
-  if (tieneXrpl && perfil.xrpl_address) {
-    registrarEventoBlockchain(primeraFactura.id, user.id, 'emision').catch((err: Error) => {
-      console.error('[XRPL] fallo silencioso primera factura recurrente:', err.message)
-    })
-  }
+  registrarEventoBlockchain(primeraFactura.id, user.id, 'emision').catch((err: Error) => {
+    console.error('[BlockchainEvent] fallo silencioso primera factura recurrente:', err.message)
+  })
 
 
   revalidatePath('/facturas/recurrentes')
@@ -352,6 +350,47 @@ export async function toggleRecurrente(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'No autenticado' }
 
+  // ── 1. Leer recurrente para saber si tiene cobro automático activo ───────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recurrente } = await (supabase.from('facturas_recurrentes') as any)
+    .select(`
+      id, cobro_automatico, stripe_subscription_id,
+      profiles!inner ( stripe_account_id )
+    `)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single() as {
+      data: {
+        id: string
+        cobro_automatico: boolean
+        stripe_subscription_id: string | null
+        profiles: { stripe_account_id: string | null }
+      } | null
+    }
+
+  if (!recurrente) return { ok: false, error: 'Recurrente no encontrada' }
+
+  // ── 2. Sincronizar con Stripe si tiene cobro automático ──────────────────────
+  // Pausar/reactivar la suscripción en Stripe para evitar cobros indeseados
+  // mientras la recurrente está pausada en FacturX.
+  if (recurrente.cobro_automatico && recurrente.stripe_subscription_id) {
+    const stripeAccountId = recurrente.profiles.stripe_account_id
+    if (stripeAccountId) {
+      try {
+        await getStripe().subscriptions.update(
+          recurrente.stripe_subscription_id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          activo ? { pause_collection: '' as any } : { pause_collection: { behavior: 'void' } },
+          { stripeAccount: stripeAccountId }  // SIEMPRE en la cuenta Express
+        )
+      } catch (err) {
+        // No bloquear el toggle en BD si Stripe falla (ej. sub ya cancelada)
+        console.warn('[toggleRecurrente] Error actualizando pausa en Stripe (continuando):', err)
+      }
+    }
+  }
+
+  // ── 3. Actualizar estado en BD ───────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('facturas_recurrentes') as any)
     .update({ activo })
@@ -369,6 +408,45 @@ export async function eliminarRecurrente(id: string): Promise<ResultadoAccion> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'No autenticado' }
 
+  // ── 1. Leer recurrente + cuenta Express del autónomo ────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recurrente } = await (supabase.from('facturas_recurrentes') as any)
+    .select(`
+      id, cobro_automatico, stripe_subscription_id,
+      profiles!inner ( stripe_account_id )
+    `)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single() as {
+      data: {
+        id: string
+        cobro_automatico: boolean
+        stripe_subscription_id: string | null
+        profiles: { stripe_account_id: string | null }
+      } | null
+    }
+
+  if (!recurrente) return { ok: false, error: 'Recurrente no encontrada' }
+
+  // ── 2. Cancelar suscripción Stripe antes de borrar el registro ───────────────
+  // Cancelación inmediata (no cancel_at_period_end): una vez eliminado el registro
+  // no existirá nadie que procese customer.subscription.deleted para la limpieza.
+  if (recurrente.cobro_automatico && recurrente.stripe_subscription_id) {
+    const stripeAccountId = recurrente.profiles.stripe_account_id
+    if (stripeAccountId) {
+      try {
+        await getStripe().subscriptions.cancel(
+          recurrente.stripe_subscription_id,
+          { stripeAccount: stripeAccountId }  // SIEMPRE en la cuenta Express
+        )
+      } catch (err) {
+        // Continuar aunque falle (ej. suscripción ya cancelada en Stripe)
+        console.warn('[eliminarRecurrente] Error cancelando suscripción Stripe (continuando):', err)
+      }
+    }
+  }
+
+  // ── 3. Eliminar registro en BD ───────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('facturas_recurrentes') as any)
     .delete()
