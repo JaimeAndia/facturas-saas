@@ -59,13 +59,24 @@ export async function POST(
   // encontrar la recurrente por stripe_subscription_id para generar la factura.
   // La limpieza final (stripe_subscription_id=null, cobro_automatico=false) la
   // hace el bloque customer.subscription.deleted del webhook Connect.
+  //
+  // NOTA: 'canceling' requiere que esté en el CHECK constraint de la BD.
+  // Migración pendiente: ALTER TABLE facturas_recurrentes
+  //   DROP CONSTRAINT facturas_recurrentes_cobro_status_check;
+  //   ADD CONSTRAINT facturas_recurrentes_cobro_status_check
+  //   CHECK (cobro_status IN ('manual','pending_setup','active','past_due','canceled','canceling'));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (adminSupabase.from('facturas_recurrentes') as any)
+  const { error: updateError } = await (adminSupabase.from('facturas_recurrentes') as any)
     .update({
       cobro_status: 'canceling',
     })
     .eq('id', id)
     .eq('user_id', user.id)
+
+  if (updateError) {
+    console.error('[desactivar-cobro] Error actualizando cobro_status:', updateError)
+    return NextResponse.json({ error: 'Error actualizando estado en BD' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
